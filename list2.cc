@@ -16,8 +16,13 @@ int main(int argc, char **argv)
 
 	for(size_t i = 0; i != devices.size(); ++i)
 	{
-		cout << devices[i]->toString(0) << endl;
-		cout << devices[i]->toRawString(2) << endl;
+		char letter = devices[i]->getLetter();
+		if (!letter) {
+			letter = '?';
+		}
+
+		cout << letter << ": " << devices[i]->toString(0) << endl;
+		cout << devices[i]->toRawString(4) << endl;
 	}
 }
 
