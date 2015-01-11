@@ -88,8 +88,18 @@ namespace letterman {
 						// we must add 1 for uuid_parse()
 						size_t guidBegin = bytes.size() - (36 + 2);
 
-						string instancePath(bytes.substr(0, guidBegin));
+						string instancePath(bytes.substr(4, guidBegin - 4));
 						string intfGuid(bytes.substr(guidBegin + 1, 36));
+
+						string::size_type pos;
+
+						while ((pos = instancePath.find('#')) != string::npos) {
+							instancePath[pos] = '\\';
+						}
+
+						if(instancePath[instancePath.size() - 1] == '\\') {
+							instancePath.resize(instancePath.size() - 1);
+						}
 
 						return new GenericDevice(data, instancePath, intfGuid);
 					}
