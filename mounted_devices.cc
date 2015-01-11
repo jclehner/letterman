@@ -71,13 +71,13 @@ namespace letterman {
 
 				return new MbrPartitionDevice(data, disk, offset);
 			} else if (len >= 8) {
-				uint64_t first = *reinterpret_cast<const uint64_t*>(buf);
-				if (len == 24 && first == 0x3a44493a4f494d44ll) { // "DMIO:ID:"
+				uint64_t magic = *reinterpret_cast<const uint64_t*>(buf);
+				if (len == 24 && magic == 0x3a44493a4f494d44LLU) { // "DMIO:ID:"
 				{
 					return new GuidPartitionDevice(data, parseGuid(buf, 8));
 				}
-				} else if (first == 0x005c003f003f005cll // "\??\"
-						|| first == 0x005f003f003f005fll) { // "_??_" 
+				} else if (magic == 0x005c003f003f005cLLU // "\??\"
+						|| magic == 0x005f003f003f005fLLU) { // "_??_" 
 					if(len >= (36 + 2) * 2) {
 						string bytes(fromWstring(data));
 
