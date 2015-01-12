@@ -1,6 +1,6 @@
 #ifndef LETTERMAN_MOUNTED_DEVICES_H
 #define LETTERMAN_MOUNTED_DEVICES_H
-#include <uuid/uuid.h>
+#include <memory>
 #include <vector>
 #include <string>
 #include <hivex.h>
@@ -17,7 +17,7 @@ class MountedDevices
 	static const int LIST_WITHOUT_LETTER = 1;
 
 	//Device* find(char letter);
-	std::vector<Device*> list(int flags = 0);
+	std::vector<std::unique_ptr<Device>> list(int flags = 0);
 
 	private:
 	hive_h *_hive;

@@ -11,7 +11,7 @@ int main(int argc, char **argv)
 	}
 
 	MountedDevices md(argv[1]);
-	vector<Device*> devices(md.list());
+	vector<unique_ptr<Device>> devices(md.list());
 
 	for (size_t i = 0; i != devices.size(); ++i)
 	{

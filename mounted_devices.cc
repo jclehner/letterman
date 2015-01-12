@@ -130,14 +130,14 @@ namespace letterman {
 		hivex_close(_hive);
 	}
 
-	vector<Device*> MountedDevices::list(int flags)
+	vector<unique_ptr<Device>> MountedDevices::list(int flags)
 	{
 		hive_value_h *values = hivex_node_values(_hive, _node);
 		if (!values) {
 			throw ErrnoException("hivex_node_values");
 		}
 
-		vector<Device*> devices;
+		vector<unique_ptr<Device>> devices;
 
 		for (; *values; ++values) {
 			int letter = 0;
@@ -162,9 +162,9 @@ namespace letterman {
 				continue;
 			}
 
-			Device* device(createDevice(toString(buf, len)));
+			unique_ptr<Device> device(createDevice(toString(buf, len)));
 			device->setLetter(letter);
-			devices.push_back(device);
+			devices.push_back(move(device));
 		}
 
 		return devices;
