@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -5,6 +6,63 @@
 using namespace std;
 
 namespace letterman {
+
+	namespace {
+
+		static const char* GUID_DEVINTERFACE_CDCHANGER =
+			"53F56312-B6BF-11D0-94F2-00A0C91EFB8B";
+
+		static const char* GUID_DEVINTERFACE_CDROM =
+			"53F56308-B6BF-11D0-94F2-00A0C91EFB8B";
+
+		static const char* GUID_DEVINTERFACE_DISK =
+			"53F56307-B6BF-11D0-94F2-00A0C91EFB8B";
+
+		static const char* GUID_DEVINTERFACE_FLOPPY =
+			"53F56311-B6BF-11D0-94F2-00A0C91EFB8B";
+
+		static const char* GUID_DEVINTERFACE_MEDIUMCHANGER =
+			"53F56310-B6BF-11D0-94F2-00A0C91EFB8B";
+
+		static const char* GUID_DEVINTERFACE_PARTITION =
+			"53F5630A-B6BF-11D0-94F2-00A0C91EFB8B";
+
+		static const char* GUID_DEVINTERFACE_STORAGEPORT =
+			"2ACCFE60-C130-11D2-B082-00A0C91EFB8B";
+
+		static const char* GUID_DEVINTERFACE_TAPE =
+			"53F5630B-B6BF-11D0-94F2-00A0C91EFB8B";
+
+		static const char* GUID_DEVINTERFACE_VOLUME =
+			"53F5630D-B6BF-11D0-94F2-00A0C91EFB8B";
+
+		static const char* GUID_DEVINTERFACE_WRITEONCEDISK =
+			"53F5630C-B6BF-11D0-94F2-00A0C91EFB8B";
+
+		string devInterfaceGuidToName(string guid)
+		{
+			transform(guid.begin(), guid.end(), guid.begin(), ::toupper);
+
+			#define HANDLE(type) if (guid == GUID_DEVINTERFACE_ ## type) return #type;
+
+			HANDLE(CDCHANGER);
+			HANDLE(CDROM);
+			HANDLE(DISK);
+			HANDLE(FLOPPY);
+			HANDLE(MEDIUMCHANGER);
+			HANDLE(PARTITION);
+			HANDLE(STORAGEPORT);
+			HANDLE(TAPE);
+			HANDLE(VOLUME);
+			HANDLE(WRITEONCEDISK);
+
+			#undef HANDLE
+
+			return guid;
+		}
+
+	}
+
 	string RawDevice::toString(int padding)
 	{
 		ostringstream ostr;
@@ -51,7 +109,7 @@ namespace letterman {
 	string GenericDevice::toString(int padding)
 	{
 		ostringstream ostr(string(padding, ' '));
-		ostr << "Device " << _path ;
+		ostr << devInterfaceGuidToName(_guid) << " " << _path;
 		return ostr.str();
 	}
 }
