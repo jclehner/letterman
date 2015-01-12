@@ -69,7 +69,7 @@ namespace letterman {
 		capitalize(_guid);
 	}
 
-	bool DeviceSelector::matches(const string& key) 
+	bool DeviceSelector::matches(const string& key) const
 	{
 		if (_letter) {
 			return key == string("\\DosDevices\\") + _letter + ":";
@@ -80,7 +80,7 @@ namespace letterman {
 		}
 	}
 
-	string RawDevice::toString(int padding)
+	string RawDevice::toString(int padding) const
 	{
 		ostringstream ostr;
 
@@ -105,7 +105,7 @@ namespace letterman {
 		return ostr.str();
 	}
 
-	string MbrPartitionDevice::toString(int padding)
+	string MbrPartitionDevice::toString(int padding) const
 	{
 		ostringstream ostr(string(padding, ' '));
 		ostr << "MBR Disk 0x";
@@ -116,14 +116,14 @@ namespace letterman {
 		return ostr.str();
 	}
 
-	string GuidPartitionDevice::toString(int padding)
+	string GuidPartitionDevice::toString(int padding) const
 	{
 		ostringstream ostr(string(padding, ' '));
 		ostr << "GUID Partition " << _guid;
 		return ostr.str();
 	}
 
-	string GenericDevice::toString(int padding)
+	string GenericDevice::toString(int padding) const
 	{
 		ostringstream ostr(string(padding, ' '));
 		ostr << devInterfaceGuidToName(_guid) << " " << _path;

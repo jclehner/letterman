@@ -130,7 +130,7 @@ namespace letterman {
 		hivex_close(_hive);
 	}
 
-	vector<unique_ptr<Device>> MountedDevices::list(int flags)
+	vector<unique_ptr<Device>> MountedDevices::list(int flags) const
 	{
 		hive_value_h *values = hivex_node_values(_hive, _node);
 		if (!values) {

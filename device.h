@@ -46,13 +46,14 @@ namespace letterman {
 	class Device
 	{
 		public:
+		virtual ~Device() {}
 
 		const DeviceSelector& selector() const {
 			return _selector;
 		}
 
-		virtual std::string toString(int padding) = 0;
-		virtual std::string toRawString(int padding) = 0;
+		virtual std::string toString(int padding) const = 0;
+		virtual std::string toRawString(int padding) const = 0;
 
 		friend class MountedDevices;
 
@@ -66,9 +67,11 @@ namespace letterman {
 		RawDevice(const std::string& data)
 		: _data(data) {}
 
-		virtual std::string toString(int padding);
+		virtual ~RawDevice() {}
 
-		inline virtual std::string toRawString(int padding) {
+		virtual std::string toString(int padding) const;
+
+		inline virtual std::string toRawString(int padding) const {
 			return RawDevice::toString(padding);
 		}
 
@@ -82,7 +85,9 @@ namespace letterman {
 		MbrPartitionDevice(const std::string& data, uint32_t disk, uint64_t offset)
 		: RawDevice(data), _disk(disk), _offset(offset) {}
 
-		virtual std::string toString(int padding);
+		virtual ~MbrPartitionDevice() {}
+
+		virtual std::string toString(int padding) const;
 
 		private:
 		uint32_t _disk;
@@ -96,7 +101,9 @@ namespace letterman {
 		: RawDevice(data), _guid(guid)
 		{}
 
-		virtual std::string toString(int padding);
+		virtual ~GuidPartitionDevice() {}
+
+		virtual std::string toString(int padding) const;
 
 		private:
 		std::string _guid;
@@ -110,7 +117,9 @@ namespace letterman {
 		: RawDevice(data), _path(path), _guid(guid)
 		{}
 
-		virtual std::string toString(int padding);
+		virtual ~GenericDevice() {}
+
+		virtual std::string toString(int padding) const;
 
 		private:
 		std::string _path;

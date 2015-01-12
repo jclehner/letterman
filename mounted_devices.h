@@ -16,8 +16,10 @@ class MountedDevices
 
 	static const int LIST_WITHOUT_LETTER = 1;
 
-	std::unique_ptr<Device> find(const DeviceSelector& selector);
-	std::vector<std::unique_ptr<Device>> list(int flags = 0);
+	std::unique_ptr<Device> find(const DeviceSelector& selector) const;
+	std::vector<std::unique_ptr<Device>> list(int flags = 0) const;
+
+	void swap(const DeviceSelector& a, const DeviceSelector& b);
 
 	private:
 	hive_h *_hive;
