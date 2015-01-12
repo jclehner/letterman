@@ -73,12 +73,10 @@ namespace letterman {
 			} else if (len >= 8) {
 				uint64_t magic = *reinterpret_cast<const uint64_t*>(buf);
 				if (len == 24 && magic == UINT64_C(0x3a44493a4f494d44)) { // "DMIO:ID:"
-				{
 					return new GuidPartitionDevice(data, parseGuid(buf, 8));
-				}
 				} else if (magic == UINT64_C(0x005c003f003f005c) // "\??\"
 						|| magic == UINT64_C(0x005f003f003f005f)) { // "_??_"
-					if(len >= (36 + 2) * 2) {
+					if (len >= (36 + 2) * 2) {
 						string bytes(fromWstring(data));
 
 						// Data is composed of the "Device Instance Path", with an
@@ -97,7 +95,7 @@ namespace letterman {
 							instancePath[pos] = '\\';
 						}
 
-						if(instancePath[instancePath.size() - 1] == '\\') {
+						if (instancePath[instancePath.size() - 1] == '\\') {
 							instancePath.resize(instancePath.size() - 1);
 						}
 
@@ -147,7 +145,7 @@ namespace letterman {
 
 			if (key.find("\\DosDevices\\") == string::npos) {
 				// do something here
-			} else if(key.size() != 14 || key[key.size() - 1] != ':') {
+			} else if (key.size() != 14 || key[key.size() - 1] != ':') {
 				throw runtime_error("Invalid key " + key);
 			} else {
 				letter = toupper(key[key.size() - 2]);

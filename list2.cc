@@ -5,8 +5,7 @@ using namespace letterman;
 
 int main(int argc, char **argv)
 {
-	if(argc != 2)
-	{
+	if (argc != 2) {
 		cerr << "usage: list2 [registry hive file]" << endl;
 		return 1;
 	}
@@ -14,7 +13,7 @@ int main(int argc, char **argv)
 	MountedDevices md(argv[1]);
 	vector<Device*> devices(md.list());
 
-	for(size_t i = 0; i != devices.size(); ++i)
+	for (size_t i = 0; i != devices.size(); ++i)
 	{
 		char letter = devices[i]->getLetter();
 		if (!letter) {
