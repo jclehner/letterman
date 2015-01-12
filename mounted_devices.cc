@@ -107,9 +107,9 @@ namespace letterman {
 		}
 	}
 
-	MountedDevices::MountedDevices(const char* filename)
+	MountedDevices::MountedDevices(const char* filename, bool writable)
 	{
-		_hive = hivex_open(filename, 0);
+		_hive = hivex_open(filename, writable ? HIVEX_OPEN_WRITE : 0);
 		if (!_hive) {
 			throw ErrnoException("hivex_open");
 		}
