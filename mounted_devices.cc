@@ -72,12 +72,12 @@ namespace letterman {
 				return new MbrPartitionDevice(data, disk, offset);
 			} else if (len >= 8) {
 				uint64_t magic = *reinterpret_cast<const uint64_t*>(buf);
-				if (len == 24 && magic == 0x3a44493a4f494d44LLU) { // "DMIO:ID:"
+				if (len == 24 && magic == UINT64_C(0x3a44493a4f494d44)) { // "DMIO:ID:"
 				{
 					return new GuidPartitionDevice(data, parseGuid(buf, 8));
 				}
-				} else if (magic == 0x005c003f003f005cLLU // "\??\"
-						|| magic == 0x005f003f003f005fLLU) { // "_??_" 
+				} else if (magic == UINT64_C(0x005c003f003f005c) // "\??\"
+						|| magic == UINT64_C(0x005f003f003f005f)) { // "_??_"
 					if(len >= (36 + 2) * 2) {
 						string bytes(fromWstring(data));
 
