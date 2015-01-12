@@ -5,8 +5,8 @@
 #include <sstream>
 #include <memory>
 #include <cctype>
-#include "exception.h"
 #include "mounted_devices.h"
+#include "exception.h"
 using namespace std;
 
 namespace letterman {
@@ -158,12 +158,22 @@ namespace letterman {
 				throw ErrnoException("hivex_value_value");
 			}
 
-			if (!letter && !(flags & LIST_WITHOUT_LETTER)) {
-				continue;
+			unique_ptr<Device> device(createDevice(toString(buf, len)));
+
+			if (letter) {
+				device->_selector = DeviceSelector::letter(letter);
+			} else {
+				if (!(flags & LIST_WITHOUT_LETTER)) {
+					continue;
+				}
+
+				if (key.find("\\??\\Volume{") != 0) {
+					throw new runtime_error("Invalid key " + key);
+				}
+
+				device->_selector = DeviceSelector::volume(key.substr(11, 36));
 			}
 
-			unique_ptr<Device> device(createDevice(toString(buf, len)));
-			device->setLetter(letter);
 			devices.push_back(move(device));
 		}
 

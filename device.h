@@ -1,6 +1,7 @@
 #ifndef LETTERMAN_DEVICES_H
 #define LETTERMAN_DEVICES_H
 #include <stdint.h>
+#include <iostream>
 #include <string>
 
 namespace letterman {
@@ -9,7 +10,10 @@ namespace letterman {
 	{
 		public:
 
-		static DeviceSelector dosDrive(char letter) {
+		DeviceSelector()
+		: _letter(0), _guid("") {}
+
+		static DeviceSelector letter(char letter) {
 			return DeviceSelector(letter, "");
 		}
 
@@ -19,9 +23,21 @@ namespace letterman {
 
 		bool matches(const std::string& key) const;
 
+		friend std::ostream& operator<<(std::ostream& os, const DeviceSelector& selector)
+		{
+			if (selector._letter) {
+				os << "Drive " << selector._letter << ":";
+			} else if (!selector._guid.empty()) {
+				os << "Volume " << selector._guid;
+			} else {
+				os << "(Invalid)";
+			}
+
+			return os;
+		}
+
 		private:
-		DeviceSelector(char letter, const std::string& guid)
-		: _letter(letter), _guid(guid) {}
+		DeviceSelector(char letter, const std::string& guid);
 
 		char _letter;
 		std::string _guid;
@@ -30,23 +46,18 @@ namespace letterman {
 	class Device
 	{
 		public:
-		Device() 
-		: _letter(0) {}
 
-		char getLetter() { 
-			return _letter; 
-		}
-
-		void setLetter(char letter) {
-			_letter = letter;
+		const DeviceSelector& selector() const {
+			return _selector;
 		}
 
 		virtual std::string toString(int padding) = 0;
 		virtual std::string toRawString(int padding) = 0;
-		//virtual std::string findDevceFile() = 0;
+
+		friend class MountedDevices;
 
 		private:
-		char _letter;
+		DeviceSelector _selector;
 	};
 
 	class RawDevice : public Device 

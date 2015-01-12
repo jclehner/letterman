@@ -9,6 +9,10 @@ namespace letterman {
 
 	namespace {
 
+		void capitalize(string& str) {
+			transform(str.begin(), str.end(), str.begin(), ::toupper);
+		}
+
 		static const char* GUID_DEVINTERFACE_CDCHANGER =
 			"53F56312-B6BF-11D0-94F2-00A0C91EFB8B";
 
@@ -41,26 +45,39 @@ namespace letterman {
 
 		string devInterfaceGuidToName(string guid)
 		{
-			transform(guid.begin(), guid.end(), guid.begin(), ::toupper);
+			capitalize(guid);
 
-			#define HANDLE(type) if (guid == GUID_DEVINTERFACE_ ## type) return #type;
-
-			HANDLE(CDCHANGER);
-			HANDLE(CDROM);
-			HANDLE(DISK);
-			HANDLE(FLOPPY);
-			HANDLE(MEDIUMCHANGER);
-			HANDLE(PARTITION);
-			HANDLE(STORAGEPORT);
-			HANDLE(TAPE);
-			HANDLE(VOLUME);
-			HANDLE(WRITEONCEDISK);
-
-			#undef HANDLE
+			if (guid == GUID_DEVINTERFACE_CDCHANGER) return "CD Changer";
+			if (guid == GUID_DEVINTERFACE_CDROM) return "CD-ROM";
+			if (guid == GUID_DEVINTERFACE_DISK) return "Disk";
+			if (guid == GUID_DEVINTERFACE_FLOPPY) return "Floppy";
+			if (guid == GUID_DEVINTERFACE_MEDIUMCHANGER) return "Medium Changer";
+			if (guid == GUID_DEVINTERFACE_PARTITION) return "Partition";
+			if (guid == GUID_DEVINTERFACE_STORAGEPORT) return "Storage Port";
+			if (guid == GUID_DEVINTERFACE_TAPE) return "Tape";
+			if (guid == GUID_DEVINTERFACE_VOLUME) return "Volume";
+			if (guid == GUID_DEVINTERFACE_WRITEONCEDISK) return "Write-Once Disk";
 
 			return guid;
 		}
 
+	}
+
+	DeviceSelector::DeviceSelector(char letter, const string& guid)
+	: _letter(letter), _guid(guid)
+	{
+		capitalize(_guid);
+	}
+
+	bool DeviceSelector::matches(const string& key) 
+	{
+		if (_letter) {
+			return key == string("\\DosDevices\\") + _letter + ":";
+		} else if (!_guid.empty()) {
+			return key == "\\??\\Volume{" + _guid + "}";
+		} else {
+			return false;
+		}
 	}
 
 	string RawDevice::toString(int padding)
