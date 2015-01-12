@@ -6,29 +6,29 @@
 
 namespace letterman {
 
-	class DeviceSelector
+	class DeviceName
 	{
 		public:
 
-		DeviceSelector()
+		DeviceName()
 		: _letter(0), _guid("") {}
 
-		static DeviceSelector letter(char letter) {
-			return DeviceSelector(letter, "");
+		static DeviceName letter(char letter) {
+			return DeviceName(letter, "");
 		}
 
-		static DeviceSelector volume(const std::string& guid) {
-			return DeviceSelector(0, guid);
+		static DeviceName volume(const std::string& guid) {
+			return DeviceName(0, guid);
 		}
 
 		bool matches(const std::string& key) const;
 
-		friend std::ostream& operator<<(std::ostream& os, const DeviceSelector& selector)
+		friend std::ostream& operator<<(std::ostream& os, const DeviceName& name)
 		{
-			if (selector._letter) {
-				os << "Drive " << selector._letter << ":";
-			} else if (!selector._guid.empty()) {
-				os << "Volume " << selector._guid;
+			if (name._letter) {
+				os << "Drive " << name._letter << ":";
+			} else if (!name._guid.empty()) {
+				os << "Volume " << name._guid;
 			} else {
 				os << "(Invalid)";
 			}
@@ -37,7 +37,7 @@ namespace letterman {
 		}
 
 		private:
-		DeviceSelector(char letter, const std::string& guid);
+		DeviceName(char letter, const std::string& guid);
 
 		char _letter;
 		std::string _guid;
@@ -48,8 +48,8 @@ namespace letterman {
 		public:
 		virtual ~Device() {}
 
-		const DeviceSelector& selector() const {
-			return _selector;
+		const DeviceName& name() const {
+			return _name;
 		}
 
 		virtual std::string toString(int padding) const = 0;
@@ -58,7 +58,7 @@ namespace letterman {
 		friend class MountedDevices;
 
 		private:
-		DeviceSelector _selector;
+		DeviceName _name;
 	};
 
 	class RawDevice : public Device 

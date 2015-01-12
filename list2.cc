@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 
 	for (size_t i = 0; i != devices.size(); ++i)
 	{
-		cout << devices[i]->selector() << endl;
+		cout << devices[i]->name() << endl;
 		cout << devices[i]->toString(2) << endl;
 		cout << devices[i]->toRawString(4) << endl;
 	}

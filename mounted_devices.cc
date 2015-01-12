@@ -161,7 +161,7 @@ namespace letterman {
 			unique_ptr<Device> device(createDevice(toString(buf, len)));
 
 			if (letter) {
-				device->_selector = DeviceSelector::letter(letter);
+				device->_name = DeviceName::letter(letter);
 			} else {
 				if (!(flags & LIST_WITHOUT_LETTER)) {
 					continue;
@@ -171,7 +171,7 @@ namespace letterman {
 					throw new runtime_error("Invalid key " + key);
 				}
 
-				device->_selector = DeviceSelector::volume(key.substr(11, 36));
+				device->_name = DeviceName::volume(key.substr(11, 36));
 			}
 
 			devices.push_back(move(device));

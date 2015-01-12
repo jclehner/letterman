@@ -63,13 +63,13 @@ namespace letterman {
 
 	}
 
-	DeviceSelector::DeviceSelector(char letter, const string& guid)
+	DeviceName::DeviceName(char letter, const string& guid)
 	: _letter(letter), _guid(guid)
 	{
 		capitalize(_guid);
 	}
 
-	bool DeviceSelector::matches(const string& key) const
+	bool DeviceName::matches(const string& key) const
 	{
 		if (_letter) {
 			return key == string("\\DosDevices\\") + _letter + ":";
