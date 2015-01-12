@@ -108,10 +108,13 @@ namespace letterman {
 	string MbrPartitionDevice::toString(int padding) const
 	{
 		ostringstream ostr(string(padding, ' '));
+		ostr << setfill('0') << hex;
+
 		ostr << "MBR Disk 0x";
-		ostr << setw(8) << setfill('0') << setbase(16) << _disk;
+		ostr << setw(8) << _disk;
 		ostr << " @ 0x";
-		ostr << setw(16) << setfill('0') << setbase(16) << _offset;
+		ostr << setw(16) << _offset;
+		ostr << " (block " << setw(0) << dec << _offset / 512 << ")";
 
 		return ostr.str();
 	}
