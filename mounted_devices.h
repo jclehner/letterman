@@ -16,7 +16,7 @@ class MountedDevices
 
 	static const int LIST_WITHOUT_LETTER = 1;
 
-	//Device* find(char letter);
+	std::unique_ptr<Device> find(const DeviceSelector& selector);
 	std::vector<std::unique_ptr<Device>> list(int flags = 0);
 
 	private:

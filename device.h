@@ -5,6 +5,28 @@
 
 namespace letterman {
 
+	class DeviceSelector
+	{
+		public:
+
+		static DeviceSelector dosDrive(char letter) {
+			return DeviceSelector(letter, "");
+		}
+
+		static DeviceSelector volume(const std::string& guid) {
+			return DeviceSelector(0, guid);
+		}
+
+		bool matches(const std::string& key) const;
+
+		private:
+		DeviceSelector(char letter, const std::string& guid)
+		: _letter(letter), _guid(guid) {}
+
+		char _letter;
+		std::string _guid;
+	};
+
 	class Device
 	{
 		public:
