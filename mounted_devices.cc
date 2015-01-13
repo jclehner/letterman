@@ -1,4 +1,5 @@
-#include <netinet/in.h>
+#define _BSD_SOURCE
+#include <endian.h>
 #include <stdexcept>
 #include <iostream>
 #include <iomanip>
@@ -44,7 +45,7 @@ namespace letterman {
 			uint32_t a = *reinterpret_cast<const uint32_t*>(p + 0);
 			uint16_t b = *reinterpret_cast<const uint16_t*>(p + 4);
 			uint16_t c = *reinterpret_cast<const uint16_t*>(p + 6);
-			uint16_t d = htons(*reinterpret_cast<const uint16_t*>(p + 8));
+			uint16_t d = htobe16(*reinterpret_cast<const uint16_t*>(p + 8));
 
 			ostr << uppercase << hex << setfill('0');
 			ostr << setw(8) << a << "-";
@@ -66,8 +67,8 @@ namespace letterman {
 			size_t len = data.size();
 
 			if (len == 12) {
-				uint32_t disk = *reinterpret_cast<const uint32_t*>(buf);
-				uint64_t offset = *reinterpret_cast<const uint64_t*>(buf + 4);
+				uint32_t disk = le32toh(*reinterpret_cast<const uint32_t*>(buf));
+				uint64_t offset = le64toh(*reinterpret_cast<const uint64_t*>(buf + 4));
 
 				return new MbrPartitionDevice(data, disk, offset);
 			} else if (len >= 8) {
