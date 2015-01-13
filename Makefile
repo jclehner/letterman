@@ -1,7 +1,17 @@
-all: list2 letterman
+CCFLAGS=-Wall -std=c++11 -g
+LDFLAGS=-lhivex
+CC=g++
 
-list2:
-	g++ -std=c++0x device.cc mounted_devices.cc list2.cc -g -o list2 -lhivex -Wall
-letterman:
-	g++ -std=c++0x device.cc mounted_devices.cc letterman.cc -g -o letterman -lhivex -Wall
+EXEC = letterman
+SOURCES = $(wildcard *.cc)
+OBJECTS = $(SOURCES:.cc=.o)
+
+$(EXEC): $(OBJECTS)
+	$(CC) $(OBJECTS) -o $(EXEC) $(LDFLAGS)
+
+%.o: %.cc
+	$(CC) -c $(CCFLAGS) $< -o $@
+
+clean:
+	rm -f $(EXEC) $(OBJECTS)
 
