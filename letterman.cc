@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 {
 	if (argc < 3) {
 		cerr << "usage: letterman [hive] [action] [arguments ...]" << endl;
-		cerr << "actions: swap, copy, remove" << endl;
+		cerr << "actions: swap, change, remove" << endl;
 		return 1;
 	}
 
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 	string arg1(argc >= 4 ? argv[3] : "");
 	string arg2(argc >= 5 ? argv[4] : "");
 
-	if (action == "swap" || action == "copy") {
+	if (action == "swap" || action == "change") {
 		requireArgCount(argc, 2);
 		requireDriveLetter(arg1);
 		requireDriveLetter(arg2);
@@ -61,8 +61,8 @@ int main(int argc, char **argv)
 
 		if (action == "swap") {
 			md.swap(a, b);
-		} else if (action == "copy") {
-			md.copy(a, b);
+		} else if (action == "change") {
+			md.change(a, b);
 		}
 	} else if (action == "remove") {
 		requireArgCount(argc, 1);

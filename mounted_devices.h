@@ -20,7 +20,7 @@ class MountedDevices
 	std::vector<std::unique_ptr<Device>> list(int flags = 0) const;
 
 	void swap(char a, char b);
-	void copy(char from, char to);
+	void change(char from, char to);
 	void remove(char letter);
 	void disable(char letter);
 	void enable(char letter);

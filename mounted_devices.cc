@@ -251,7 +251,7 @@ namespace letterman {
 		}
 	}
 
-	void MountedDevices::copy(char from, char to)
+	void MountedDevices::change(char from, char to)
 	{
 		Value val;
 		getValue(_hive, _node, DeviceName::letter(from).key(), val);
@@ -260,8 +260,20 @@ namespace letterman {
 
 		hive_value_h handle = hivex_node_get_value(_hive, _node, key.c_str());
 		if (handle) {
-			throw invalid_argument(string("Drive letter ") 
-					+ to + ": is already taken");
+			hive_type t;
+			size_t len;
+
+			if (hivex_value_type(hive, handle, &t, &len) != 0) {
+				throw ErrnoException("hivex_value_type");
+			}
+
+			if (len != 0) {
+				throw invalid_argument(string("Drive letter ") 
+						+ to + ": is already taken");
+			}
+
+			// Zero length means removed (by us) - Windows will boot
+			// happily with a zero-length \\DosDevices\\X: entry.
 		}
 
 		val.setKey(key);
@@ -273,6 +285,8 @@ namespace letterman {
 		if (hivex_commit(_hive, NULL, 0) != 0) {
 			throw ErrnoException("hivex_commit");
 		}
+
+		remove(from);
 	}
 
 	void MountedDevices::remove(char letter)
@@ -280,8 +294,7 @@ namespace letterman {
 		Value val;
 		getValue(_hive, _node, DeviceName::letter(letter).key(), val);
 
-		free(val->value);
-		val->value = NULL;
+		// hivex does not support deleting values, so just clear it
 		val->len = 0;
 
 		if (hivex_node_set_value(_hive, _node, &val.val, 0) != 0) {
