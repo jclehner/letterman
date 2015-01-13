@@ -124,6 +124,12 @@ namespace letterman {
 				return &val;
 			}
 
+			void setKey(const string& key)
+			{
+				free(val.key);
+				val.key = strdup(key.c_str());
+			}
+
 			hive_set_value val;
 		};
 
@@ -237,6 +243,48 @@ namespace letterman {
 		}
 
 		if (hivex_node_set_value(_hive, _node, &bVal.val, 0) != 0) {
+			throw ErrnoException("hivex_node_set_value");
+		}
+
+		if (hivex_commit(_hive, NULL, 0) != 0) {
+			throw ErrnoException("hivex_commit");
+		}
+	}
+
+	void MountedDevices::copy(char from, char to)
+	{
+		Value val;
+		getValue(_hive, _node, DeviceName::letter(from).key(), val);
+
+		string key(DeviceName::letter(to).key());
+
+		hive_value_h handle = hivex_node_get_value(_hive, _node, key.c_str());
+		if (handle) {
+			throw invalid_argument(string("Drive letter ") 
+					+ to + ": is already taken");
+		}
+
+		val.setKey(key);
+
+		if (hivex_node_set_value(_hive, _node, &val.val, 0) != 0) {
+			throw ErrnoException("hivex_node_set_value");
+		}
+
+		if (hivex_commit(_hive, NULL, 0) != 0) {
+			throw ErrnoException("hivex_commit");
+		}
+	}
+
+	void MountedDevices::remove(char letter)
+	{
+		Value val;
+		getValue(_hive, _node, DeviceName::letter(letter).key(), val);
+
+		free(val->value);
+		val->value = NULL;
+		val->len = 0;
+
+		if (hivex_node_set_value(_hive, _node, &val.val, 0) != 0) {
 			throw ErrnoException("hivex_node_set_value");
 		}
 
