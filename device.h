@@ -21,7 +21,7 @@ namespace letterman {
 			return DeviceName(0, guid);
 		}
 
-		bool matches(const std::string& key) const;
+		std::string key() const;
 
 		friend std::ostream& operator<<(std::ostream& os, const DeviceName& name)
 		{

@@ -105,6 +105,44 @@ namespace letterman {
 			}
 			return new RawDevice(data);
 		}
+
+		struct Value
+		{
+			Value()
+			{
+				val = { 0 };
+			}
+
+			~Value()
+			{
+				free(val.key);
+				free(val.value);
+			}
+
+			hive_set_value* operator->() {
+				return &val;
+			}
+
+			hive_set_value val;
+		};
+
+		void getValue(hive_h* hive, hive_node_h node, const string& name, Value& out)
+		{
+			hive_value_h handle = hivex_node_get_value(hive, node, name.c_str());
+			if (!handle) {
+				throw ErrnoException("hivex_node_get_value");
+			}
+
+			out->value = hivex_value_value(hive, handle, &out->t, &out->len);
+			if (!out->value) {
+				throw ErrnoException("hivex_value_value");
+			}
+
+			out->key = strdup(name.c_str());
+			if (!out->key) {
+				throw ErrnoException("strdup");
+			}
+		}
 	}
 
 	MountedDevices::MountedDevices(const char* filename, bool writable)
@@ -179,7 +217,30 @@ namespace letterman {
 
 		return devices;
 	}
+
+	void MountedDevices::swap(char a, char b)
+	{
+		Value aVal, bVal;
+
+		getValue(_hive, _node, DeviceName::letter(a).key(), aVal);
+		getValue(_hive, _node, DeviceName::letter(b).key(), bVal);
+
+		// The logical thing to do would be to rename the values,
+		// but hivex does not support this, so we read the 
+		// values, swap the keys, and write them back to the hive.
+
+		::swap(aVal->key, bVal->key);
+
+		if (hivex_node_set_value(_hive, _node, &aVal.val, 0) != 0) {
+			throw ErrnoException("hivex_node_set_value");
+		}
+
+		if (hivex_node_set_value(_hive, _node, &bVal.val, 0) != 0) {
+			throw ErrnoException("hivex_node_set_value");
+		}
+
+		if (hivex_commit(_hive, NULL, 0) != 0) {
+			throw ErrnoException("hivex_commit");
+		}
+	}
 }
-
-
-

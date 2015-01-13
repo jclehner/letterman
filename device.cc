@@ -69,14 +69,14 @@ namespace letterman {
 		capitalize(_guid);
 	}
 
-	bool DeviceName::matches(const string& key) const
+	std::string DeviceName::key() const
 	{
 		if (_letter) {
-			return key == string("\\DosDevices\\") + _letter + ":";
+			return string("\\DosDevices\\") + _letter + ":";
 		} else if (!_guid.empty()) {
-			return key == "\\??\\Volume{" + _guid + "}";
+			return "\\??\\Volume{" + _guid + "}";
 		} else {
-			return false;
+			return "";
 		}
 	}
 
