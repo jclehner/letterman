@@ -83,8 +83,7 @@ namespace letterman {
 						// Data is composed of the "Device Instance Path", with an
 						// appended GUID specifying the "Device Interface"
 						// (http://msdn.microsoft.com/en-us/library/windows/hardware/ff545813%28v=vs.85%29.aspx)
-						// Note that the GUID is surrounded by {}, so to parse it
-						// we must add 1 for uuid_parse()
+						// Note that the GUID is surrounded by {}
 						size_t guidBegin = bytes.size() - (36 + 2);
 
 						string instancePath(bytes.substr(4, guidBegin - 4));
