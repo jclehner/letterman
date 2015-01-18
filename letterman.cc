@@ -12,11 +12,11 @@ namespace {
 		bool invalid = false;
 
 		switch (arg.size()) {
-			case 1:
-				invalid |= !isupper(arg[0]);
-				// fall through
 			case 2:
 				invalid |= arg[1] != ':';
+				// fall through
+			case 1:
+				invalid |= (arg[0] < 'A' || arg[0] > 'Z');
 				break;
 		}
 
