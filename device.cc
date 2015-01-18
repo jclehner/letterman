@@ -148,6 +148,8 @@ namespace letterman {
 	}
 }
 
-#ifdef __linux__
+#if defined __linux__
 #include "device_linux.icc"
+#elif defined __apple__
+#include "device_macosx.icc"
 #endif

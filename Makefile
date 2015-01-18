@@ -1,5 +1,5 @@
 CCFLAGS=-Wall -std=c++11 -g
-LDFLAGS=-lhivex
+LDFLAGS=-lhivex -ludev
 CC=g++
 
 EXEC = letterman

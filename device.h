@@ -26,9 +26,9 @@ namespace letterman {
 		friend std::ostream& operator<<(std::ostream& os, const DeviceName& name)
 		{
 			if (name._letter) {
-				os << "Drive " << name._letter << ":";
+				os << name._letter << ":";
 			} else if (!name._guid.empty()) {
-				os << "Volume " << name._guid;
+				os << "Volume{" << name._guid << "}";
 			} else {
 				os << "(Invalid)";
 			}
@@ -54,7 +54,7 @@ namespace letterman {
 		}
 
 		virtual std::string toString(int padding) const = 0;
-		virtual const std::string osDeviceName() const
+		virtual std::string osDeviceName() const
 		{ return ""; }
 
 		friend class MountedDevices;
@@ -86,6 +86,7 @@ namespace letterman {
 		virtual ~MbrPartitionDevice() {}
 
 		virtual std::string toString(int padding) const;
+		virtual std::string osDeviceName() const;
 
 		private:
 		uint32_t _disk;
@@ -102,6 +103,7 @@ namespace letterman {
 		virtual ~GuidPartitionDevice() {}
 
 		virtual std::string toString(int padding) const;
+		virtual std::string osDeviceName() const;
 
 		private:
 		std::string _guid;
