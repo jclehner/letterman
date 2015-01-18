@@ -211,6 +211,8 @@ namespace letterman {
 				throw ErrnoException("hivex_value_value");
 			}
 
+			if (!len) continue;
+
 			unique_ptr<Device> device(createDevice(toString(buf, len)));
 
 			if (letter) {
