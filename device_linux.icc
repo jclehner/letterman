@@ -1,48 +1,76 @@
 #include <libudev.h>
 #include <sstream>
+#include <memory>
 #include <string>
+#include <map>
 #include "device.h"
 using namespace std;
 
 namespace letterman {
-
 	namespace {
-		string findDeviceWithUdevProp(const string& key, const string& value)
-		{
-			udev *udev;
-			udev_enumerate *enumerate;
-			udev_list_entry *devices, *dev_list_entry;
+		static const char* PROPS[] = {
+			"DEVNAME", "ID_PART_ENTRY_OFFSET", "ID_PART_ENTRY_NUMBER", "ID_FS_LABEL",
+			"ID_FS_LABEL_ENC", "UDISKS_PARTITION_NUMBER", "UDISKS_PARTITION_OFFSET" 
+		};
 
-			udev = udev_new();
+		typedef map<string, string> PropMap;
+		template<typename T> using UdevUniquePtr = unique_ptr<T, std::function<void(T*)>>;
+
+		PropMap findDeviceWithUdevProp(const string& key, const string& value)
+		{
+
+			UdevUniquePtr<udev> udev(udev_new(), [] (struct udev* p) { udev_unref(p); });
 			if (!udev) {
 				throw ErrnoException("udev_new");
 			}
 
-			enumerate = udev_enumerate_new(udev);
-			udev_enumerate_add_match_subsystem(enumerate, "block");
-			udev_enumerate_scan_devices(enumerate);
-			devices = udev_enumerate_get_list_entry(enumerate);
+			UdevUniquePtr<udev_enumerate> enumerate(udev_enumerate_new(udev.get()), 
+					[] (udev_enumerate* p) { udev_enumerate_unref(p); });
+
+			udev_enumerate_add_match_subsystem(enumerate.get(), "block");
+			udev_enumerate_scan_devices(enumerate.get());
+
+			udev_list_entry *devices, *dev_list_entry;
+			devices = udev_enumerate_get_list_entry(enumerate.get());
 
 			udev_list_entry_foreach(dev_list_entry, devices) {
 
 				const char* path = udev_list_entry_get_name(dev_list_entry);
-				udev_device *dev = udev_device_new_from_syspath(udev, path);
+				UdevUniquePtr<udev_device> dev(udev_device_new_from_syspath(udev.get(), path),
+						[] (udev_device* p) { udev_device_unref(p); });
 
-				const char* ret = NULL;
-				const char* val = udev_device_get_sysattr_value(dev, key.c_str());
+				PropMap propMap;
+				const char* val = udev_device_get_property_value(dev.get(), key.c_str());
 
 				if (val && val == value) {
-					ret = udev_device_get_sysattr_value(dev, "DEVNAME");
+					for (const char* key : PROPS) {
+						const char* prop = udev_device_get_property_value(dev.get(), key);
+						propMap[key] = prop ? prop : "";
+					}
 				}
 
-				udev_device_unref(dev);
-
-				if (ret) {
-					return ret;
+				if (!propMap.empty()) {
+					return propMap;
 				}
 			}
 
-			return "";
+			return PropMap();
+		}
+
+		uint64_t getPartOffset(const PropMap& props)
+		{
+			string str(props.at("UDISKS_PARTITION_OFFSET"));
+			if (str.empty()) {
+				str = props.at("ID_PART_ENTRY_OFFSET");
+			}
+
+			uint64_t offset;
+			istringstream istr(str);
+			if (istr >> offset) {
+				return offset;
+			} 
+
+			throw invalid_argument("offset " + str);
 		}
 	}
 
@@ -51,12 +79,17 @@ namespace letterman {
 		ostringstream ostr;
 		ostr << setfill('0') << hex << setw(8) << _disk;
 
-		string disk(findDeviceWithUdevProp("ID_PART_TABLE_UUID", ostr.str()));
+		PropMap props(findDeviceWithUdevProp("ID_PART_TABLE_UUID", ostr.str()));
+		string disk(props["DEVNAME"]);
+
 		if (disk.empty()) {
-			return "(not attached)";
+			ostr.str("");
+			ostr << "(disk " << hex << setw(8) << _disk << " @ block " << dec << setw(0) 
+				<< (_offset / 512) << ")";
+			return ostr.str();
 		}
 
-		ostr.clear();
+		ostr.str("");
 		ostr << _offset;
 
 		if (/*geteuid() != 0*/ true) {
@@ -69,7 +102,8 @@ namespace letterman {
 		string guid(_guid);
 		transform(guid.begin(), guid.end(), guid.begin(), ::tolower);
 
-		string disk(findDeviceWithUdevProp("PARTUUID", guid));
+		PropMap props(findDeviceWithUdevProp("ID_PART_ENTRY_UUID", guid));
+		string disk(props["DEVNAME"]);
 		return disk.empty() ? "(not attached)" : disk;
 	}
 }

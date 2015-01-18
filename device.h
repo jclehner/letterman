@@ -26,9 +26,9 @@ namespace letterman {
 		friend std::ostream& operator<<(std::ostream& os, const DeviceName& name)
 		{
 			if (name._letter) {
-				os << "Drive " << name._letter << ":";
+				os << name._letter << ":";
 			} else if (!name._guid.empty()) {
-				os << "Volume " << name._guid;
+				os << "Volume{" << name._guid << "}";
 			} else {
 				os << "(Invalid)";
 			}

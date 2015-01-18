@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 {
 	if (argc < 3) {
 		cerr << "usage: letterman [hive] [action] [arguments ...]" << endl;
-		cerr << "actions: swap, change, remove" << endl;
+		cerr << "actions: list, swap, change, remove" << endl;
 		return 1;
 	}
 
@@ -71,6 +71,10 @@ int main(int argc, char **argv)
 			requireDriveLetter(arg1);
 
 			MountedDevices (argv[1], true).remove(arg1[0]);
+		} else if (action == "list") {
+			for (auto&& device : MountedDevices(argv[1], false).list(0)) {
+				cout << device->name() << "    " << device->osDeviceName() << endl;
+			}
 		} else {
 			cerr << action << ": unknown action" << endl;
 			return 1;
