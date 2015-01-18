@@ -2,6 +2,7 @@
 #include <sstream>
 #include <string>
 #include "mounted_devices.h"
+#include "exception.h"
 using namespace std;
 using namespace letterman;
 
@@ -20,7 +21,7 @@ namespace {
 		}
 
 		if (invalid) {
-			throw invalid_argument("Not a drive letter: " + arg);
+			throw UserFault("Not a drive letter: " + arg);
 		}
 	}
 
@@ -30,7 +31,7 @@ namespace {
 			ostringstream ostr;
 			ostr << "Action requires " << n << " argument";
 			ostr << (n == 1 ? "" : "s");
-			throw invalid_argument(ostr.str());
+			throw UserFault(ostr.str());
 		}
 	}
 
@@ -49,28 +50,37 @@ int main(int argc, char **argv)
 	string arg1(argc >= 4 ? argv[3] : "");
 	string arg2(argc >= 5 ? argv[4] : "");
 
-	if (action == "swap" || action == "change") {
-		requireArgCount(argc, 2);
-		requireDriveLetter(arg1);
-		requireDriveLetter(arg2);
+	try {
+		if (action == "swap" || action == "change") {
+			requireArgCount(argc, 2);
+			requireDriveLetter(arg1);
+			requireDriveLetter(arg2);
 
-		char a = arg1[0];
-		char b = arg2[0];
+			char a = arg1[0];
+			char b = arg2[0];
 
-		MountedDevices md(argv[1], true);
+			MountedDevices md(argv[1], true);
 
-		if (action == "swap") {
-			md.swap(a, b);
-		} else if (action == "change") {
-			md.change(a, b);
+			if (action == "swap") {
+				md.swap(a, b);
+			} else if (action == "change") {
+				md.change(a, b);
+			}
+		} else if (action == "remove") {
+			requireArgCount(argc, 1);
+			requireDriveLetter(arg1);
+
+			MountedDevices (argv[1], true).remove(arg1[0]);
+		} else {
+			cerr << action << ": unknown action" << endl;
+			return 1;
 		}
-	} else if (action == "remove") {
-		requireArgCount(argc, 1);
-		requireDriveLetter(arg1);
-
-		MountedDevices (argv[1], true).remove(arg1[0]);
-	} else {
-		cerr << action << ": unknown action" << endl;
+	} catch (const UserFault& uf) {
+		cerr << uf.what() << endl;
+		return 1;
+	} catch (const std::exception& e) {
+		cerr << typeid(e).name() << endl;
+		cerr << e.what() << endl;
 		return 1;
 	}
 }
