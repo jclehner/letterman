@@ -70,11 +70,11 @@ namespace letterman {
 				uint32_t disk = le32toh(*reinterpret_cast<const uint32_t*>(buf));
 				uint64_t offset = le64toh(*reinterpret_cast<const uint64_t*>(buf + 4));
 
-				return new MbrPartitionDevice(data, disk, offset);
+				return new MbrPartitionDevice(disk, offset);
 			} else if (len >= 8) {
 				uint64_t magic = *reinterpret_cast<const uint64_t*>(buf);
 				if (len == 24 && magic == UINT64_C(0x3a44493a4f494d44)) { // "DMIO:ID:"
-					return new GuidPartitionDevice(data, parseGuid(buf, 8));
+					return new GuidPartitionDevice(parseGuid(buf, 8));
 				} else if (magic == UINT64_C(0x005c003f003f005c) // "\??\"
 						|| magic == UINT64_C(0x005f003f003f005f)) { // "_??_"
 					if (len >= (36 + 2) * 2) {
@@ -99,7 +99,7 @@ namespace letterman {
 							instancePath.resize(instancePath.size() - 1);
 						}
 
-						return new GenericDevice(data, instancePath, intfGuid);
+						return new GenericDevice(instancePath, intfGuid);
 					}
 				}
 			}

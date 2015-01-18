@@ -1,0 +1,75 @@
+#include <libudev.h>
+#include <sstream>
+#include <string>
+#include "device.h"
+using namespace std;
+
+namespace letterman {
+
+	namespace {
+		string findDeviceWithUdevProp(const string& key, const string& value)
+		{
+			udev *udev;
+			udev_enumerate *enumerate;
+			udev_list_entry *devices, *dev_list_entry;
+
+			udev = udev_new();
+			if (!udev) {
+				throw ErrnoException("udev_new");
+			}
+
+			enumerate = udev_enumerate_new(udev);
+			udev_enumerate_add_match_subsystem(enumerate, "block");
+			udev_enumerate_scan_devices(enumerate);
+			devices = udev_enumerate_get_list_entry(enumerate);
+
+			udev_list_entry_foreach(dev_list_entry, devices) {
+
+				const char* path = udev_list_entry_get_name(dev_list_entry);
+				udev_device *dev = udev_device_new_from_syspath(udev, path);
+
+				const char* ret = NULL;
+				const char* val = udev_device_get_sysattr_value(dev, key.c_str());
+
+				if (val && val == value) {
+					ret = udev_device_get_sysattr_value(dev, "DEVNAME");
+				}
+
+				udev_device_unref(dev);
+
+				if (ret) {
+					return ret;
+				}
+			}
+
+			return "";
+		}
+	}
+
+	string MbrPartitionDevice::osDeviceName() const
+	{
+		ostringstream ostr;
+		ostr << setfill('0') << hex << setw(8) << _disk;
+
+		string disk(findDeviceWithUdevProp("ID_PART_TABLE_UUID", ostr.str()));
+		if (disk.empty()) {
+			return "(not attached)";
+		}
+
+		ostr.clear();
+		ostr << _offset;
+
+		if (/*geteuid() != 0*/ true) {
+			return disk + ", _offset=" + ostr.str();
+		}
+	}
+
+	string GuidPartitionDevice::osDeviceName() const
+	{
+		string guid(_guid);
+		transform(guid.begin(), guid.end(), guid.begin(), ::tolower);
+
+		string disk(findDeviceWithUdevProp("PARTUUID", guid));
+		return disk.empty() ? "(not attached)" : disk;
+	}
+}
