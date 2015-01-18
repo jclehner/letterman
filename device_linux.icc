@@ -1,4 +1,5 @@
 #include <libudev.h>
+#include <fstream>
 #include <sstream>
 #include <memory>
 #include <string>
@@ -11,13 +12,14 @@ namespace letterman {
 	namespace {
 		static const char* PROPS[] = {
 			"DEVNAME", "ID_PART_ENTRY_OFFSET", "ID_PART_ENTRY_NUMBER", "ID_FS_LABEL",
-			"ID_FS_LABEL_ENC", "UDISKS_PARTITION_NUMBER", "UDISKS_PARTITION_OFFSET" 
+			"ID_FS_LABEL_ENC", "UDISKS_PARTITION_NUMBER", "UDISKS_PARTITION_OFFSET",
+			"ID_DRIVE_FLOPPY", "MAJOR", "MINOR", "ID_SERIAL", "ID_SERIAL_SHORT"
 		};
 
 		typedef map<string, string> PropMap;
 		template<typename T> using UdevUniquePtr = unique_ptr<T, std::function<void(T*)>>;
 
-		PropMap findEntryWithUdevProps(const PropMap& criteria)
+		map<string, PropMap> findEntriesWithUdevProps(const PropMap& criteria)
 		{
 			UdevUniquePtr<udev> udev(udev_new(), [] (struct udev* p) { udev_unref(p); });
 			if (!udev) {
@@ -32,6 +34,8 @@ namespace letterman {
 
 			udev_list_entry *devices, *dev_list_entry;
 			devices = udev_enumerate_get_list_entry(enumerate.get());
+
+			map<string, PropMap> entries;
 
 			udev_list_entry_foreach(dev_list_entry, devices) {
 
@@ -61,8 +65,18 @@ namespace letterman {
 				}
 
 				if (!propMap.empty()) {
-					return propMap;
+					entries[propMap["DEVNAME"]] = propMap;
 				}
+			}
+
+			return entries;
+		}
+
+		PropMap findEntryWithUdevProps(const PropMap& criteria)
+		{
+			map<string, PropMap> entries(findEntriesWithUdevProps(criteria));
+			if (!entries.empty()) {
+				return entries.begin()->second;
 			}
 
 			return PropMap();
@@ -70,26 +84,34 @@ namespace letterman {
 
 		PropMap findEntryWithUdevProp(const string& type, const string& key, const string& value)
 		{
-			PropMap criteria;
-			criteria["DEVTYPE"] = type;
-			criteria[key] = value;
+			PropMap criteria = {
+				{"DEVTYPE", type}, {key, value}};
 			return findEntryWithUdevProps(criteria);
 		}
 
-		uint64_t getPartOffset(const PropMap& props)
+		string findDiskById(uint32_t id)
 		{
-			string str(props.at("UDISKS_PARTITION_OFFSET"));
-			if (str.empty()) {
-				str = props.at("ID_PART_ENTRY_OFFSET");
+			PropMap criteria = {{"DEVTYPE", "disk"}};
+			map<string, PropMap> disks(findEntriesWithUdevProps(criteria));
+			for (auto& disk : disks) {
+				if (!disk.second["ID_DRIVE_FLOPPY"].empty()) continue;
+
+				ifstream mbr(disk.first.c_str());
+				if (!mbr.good() || !mbr.seekg(440)) {
+					continue;
+				}
+
+				uint32_t mbrId;
+				if(!mbr.read(reinterpret_cast<char*>(&mbrId), 4)) {
+					continue;
+				}
+
+				if(le32toh(mbrId) == id) {
+					return disk.first;
+				}
 			}
 
-			uint64_t offset;
-			istringstream istr(str);
-			if (istr >> offset) {
-				return offset;
-			} 
-
-			throw invalid_argument("offset " + str);
+			return "";
 		}
 	}
 
@@ -98,12 +120,17 @@ namespace letterman {
 		ostringstream ostr;
 		ostr << setfill('0') << hex << setw(8) << _disk;
 
+		// ID_PART_TABLE_UUID is not available in some udev
+		// versions (Ubuntu 14.04 for example)
 		PropMap criteria = {
 			{"DEVTYPE", "disk"}, {"ID_PART_TABLE_UUID", ostr.str()}};
 
-
 		PropMap props(findEntryWithUdevProps(criteria));
 		string disk(props["DEVNAME"]);
+		if (disk.empty() && geteuid() == 0) {
+			disk = findDiskById(_disk);
+		}
+
 		if (disk.empty()) {
 			ostr.str("");
 			ostr << "(disk " << hex << setw(8) << _disk << " @ block " << dec << setw(0) 
@@ -111,9 +138,30 @@ namespace letterman {
 			return ostr.str();
 		}
 
-		// we have the disk, but no partition yet
+		// We have the disk, but no partition yet. Lookup the
+		// props of the entry with DEVNAME=disk, so we can
+		// associate the partition to its disk
 
+		criteria["ID_PART_TABLE_UUID"] = "";
+		criteria["DEVNAME"] = disk;
+
+		props = findEntryWithUdevProps(criteria);
+
+
+		criteria["DEVNAME"] = "";
 		criteria["DEVTYPE"] = "partition";
+
+		// Searching for a partition by offset only might yield
+		// ambiguous results, especially if the partition in question
+		// is the first partition with an offset of 2 or 63 blocks
+		// (depending on the partitioning utility used).
+
+		if (!props["ID_SERIAL"].empty()) {
+			criteria["ID_SERIAL"] = props["ID_SERIAL"];
+		} else {
+			criteria["ID_PART_ENTRY_DISK"] = props["MAJOR"] + ":" + props["MINOR"];
+		}
+
 		criteria["ID_PART_ENTRY_OFFSET"] = util::toString(_offset / 512);
 
 		props = findEntryWithUdevProps(criteria);
