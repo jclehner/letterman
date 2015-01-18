@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include "device.h"
+#include "util.h"
 using namespace std;
 
 namespace letterman {
@@ -16,9 +17,8 @@ namespace letterman {
 		typedef map<string, string> PropMap;
 		template<typename T> using UdevUniquePtr = unique_ptr<T, std::function<void(T*)>>;
 
-		PropMap findDeviceWithUdevProp(const string& key, const string& value)
+		PropMap findEntryWithUdevProps(const PropMap& criteria)
 		{
-
 			UdevUniquePtr<udev> udev(udev_new(), [] (struct udev* p) { udev_unref(p); });
 			if (!udev) {
 				throw ErrnoException("udev_new");
@@ -39,14 +39,25 @@ namespace letterman {
 				UdevUniquePtr<udev_device> dev(udev_device_new_from_syspath(udev.get(), path),
 						[] (udev_device* p) { udev_device_unref(p); });
 
-				PropMap propMap;
-				const char* val = udev_device_get_property_value(dev.get(), key.c_str());
+				bool skip = false;
 
-				if (val && val == value) {
-					for (const char* key : PROPS) {
-						const char* prop = udev_device_get_property_value(dev.get(), key);
-						propMap[key] = prop ? prop : "";
+				for (auto& c : criteria) {
+					if (c.second.empty()) continue;
+
+					const char* val = udev_device_get_property_value(dev.get(), c.first.c_str());
+					if (!val || val != c.second) {
+						skip = true;
+						break;
 					}
+				}
+
+				if (skip) continue;
+
+				PropMap propMap;
+
+				for (const char* key : PROPS) {
+					const char* prop = udev_device_get_property_value(dev.get(), key);
+					propMap[key] = prop ? prop : "";
 				}
 
 				if (!propMap.empty()) {
@@ -55,6 +66,14 @@ namespace letterman {
 			}
 
 			return PropMap();
+		}
+
+		PropMap findEntryWithUdevProp(const string& type, const string& key, const string& value)
+		{
+			PropMap criteria;
+			criteria["DEVTYPE"] = type;
+			criteria[key] = value;
+			return findEntryWithUdevProps(criteria);
 		}
 
 		uint64_t getPartOffset(const PropMap& props)
@@ -79,9 +98,12 @@ namespace letterman {
 		ostringstream ostr;
 		ostr << setfill('0') << hex << setw(8) << _disk;
 
-		PropMap props(findDeviceWithUdevProp("ID_PART_TABLE_UUID", ostr.str()));
-		string disk(props["DEVNAME"]);
+		PropMap criteria = {
+			{"DEVTYPE", "disk"}, {"ID_PART_TABLE_UUID", ostr.str()}};
 
+
+		PropMap props(findEntryWithUdevProps(criteria));
+		string disk(props["DEVNAME"]);
 		if (disk.empty()) {
 			ostr.str("");
 			ostr << "(disk " << hex << setw(8) << _disk << " @ block " << dec << setw(0) 
@@ -89,12 +111,27 @@ namespace letterman {
 			return ostr.str();
 		}
 
-		ostr.str("");
-		ostr << _offset;
+		// we have the disk, but no partition yet
 
-		if (/*geteuid() != 0*/ true) {
-			return disk + ", _offset=" + ostr.str();
+		criteria["DEVTYPE"] = "partition";
+		criteria["ID_PART_ENTRY_OFFSET"] = util::toString(_offset / 512);
+
+		props = findEntryWithUdevProps(criteria);
+		string part(props["DEVNAME"]);
+		if (!part.empty()) {
+			return part;
 		}
+
+		criteria["ID_PART_ENTRY_OFFSET"] = "";
+		criteria["UDISKS_PARTITION_OFFSET"] = util::toString(_offset);
+
+		props = findEntryWithUdevProps(criteria);
+		part = props["DEVNAME"];
+		if (!part.empty()) {
+			return part;
+		}
+
+		return disk + "? (offset " + util::toString(_offset / 512) + " blocks)";
 	}
 
 	string GuidPartitionDevice::osDeviceName() const
@@ -102,7 +139,7 @@ namespace letterman {
 		string guid(_guid);
 		transform(guid.begin(), guid.end(), guid.begin(), ::tolower);
 
-		PropMap props(findDeviceWithUdevProp("ID_PART_ENTRY_UUID", guid));
+		PropMap props(findEntryWithUdevProp("partition", "ID_PART_ENTRY_UUID", guid));
 		string disk(props["DEVNAME"]);
 		return disk.empty() ? "(not attached)" : disk;
 	}
