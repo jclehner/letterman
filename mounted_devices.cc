@@ -132,11 +132,11 @@ namespace letterman {
 			hive_set_value val;
 		};
 
-		void getValue(hive_h* hive, hive_node_h node, const string& name, Value& out)
+		bool getValue(hive_h* hive, hive_node_h node, const string& name, Value& out)
 		{
 			hive_value_h handle = hivex_node_get_value(hive, node, name.c_str());
 			if (!handle) {
-				throw ErrnoException("hivex_node_get_value");
+				return false;
 			}
 
 			out->value = hivex_value_value(hive, handle, &out->t, &out->len);
@@ -147,6 +147,15 @@ namespace letterman {
 			out->key = strdup(name.c_str());
 			if (!out->key) {
 				throw ErrnoException("strdup");
+			}
+
+			return true;
+		}
+
+		void getValue(hive_h* hive, hive_node_h node, char letter, Value& out)
+		{
+			if (!getValue(hive, node, DeviceName::letter(letter).key(), out)) {
+				throw UserFault(string("Letter is not mapped to any volume: ") + letter + ":");
 			}
 		}
 	}
@@ -228,8 +237,8 @@ namespace letterman {
 	{
 		Value aVal, bVal;
 
-		getValue(_hive, _node, DeviceName::letter(a).key(), aVal);
-		getValue(_hive, _node, DeviceName::letter(b).key(), bVal);
+		getValue(_hive, _node, a, aVal);
+		getValue(_hive, _node, b, bVal);
 
 		// The logical thing to do would be to rename the values,
 		// but hivex does not support this, so we read the 
@@ -253,7 +262,7 @@ namespace letterman {
 	void MountedDevices::change(char from, char to)
 	{
 		Value val;
-		getValue(_hive, _node, DeviceName::letter(from).key(), val);
+		getValue(_hive, _node, from, val);
 
 		string key(DeviceName::letter(to).key());
 
@@ -267,7 +276,7 @@ namespace letterman {
 			}
 
 			if (len != 0) {
-				throw invalid_argument(string("Drive letter ") 
+				throw UserFault(string("Drive letter ") 
 						+ to + ": is already taken");
 			}
 
@@ -291,7 +300,7 @@ namespace letterman {
 	void MountedDevices::remove(char letter)
 	{
 		Value val;
-		getValue(_hive, _node, DeviceName::letter(letter).key(), val);
+		getValue(_hive, _node, letter, val);
 
 		// hivex does not support deleting values, so just clear it
 		val->len = 0;
