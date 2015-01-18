@@ -1,5 +1,3 @@
-#define _BSD_SOURCE
-#include <endian.h>
 #include <stdexcept>
 #include <iostream>
 #include <iomanip>
@@ -8,6 +6,7 @@
 #include <cctype>
 #include "mounted_devices.h"
 #include "exception.h"
+#include "endian.h"
 using namespace std;
 
 namespace letterman {
@@ -263,7 +262,7 @@ namespace letterman {
 			hive_type t;
 			size_t len;
 
-			if (hivex_value_type(hive, handle, &t, &len) != 0) {
+			if (hivex_value_type(_hive, handle, &t, &len) != 0) {
 				throw ErrnoException("hivex_value_type");
 			}
 
