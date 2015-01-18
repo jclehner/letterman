@@ -20,7 +20,8 @@ namespace letterman {
 
 		// poor man's conversion from windows wide strings
 		// with 16-byte chars. we simply ignore all chars
-		// where the second byte is non-zero
+		// where the second byte is non-zero (or the first
+		// byte a non-7-bit char)
 		string fromWstring(string wstr)
 		{
 			if (wstr.size() % 2) {
@@ -30,7 +31,7 @@ namespace letterman {
 			string ret;
 
 			for(string::size_type i = 0; i < wstr.size(); i += 2) {
-				ret += wstr[i + 1] ? '?' : wstr[i];
+				ret += (wstr[i + 1] || wstr[i] & 0x80) ? '?' : wstr[i];
 			}
 
 			return ret;
