@@ -46,6 +46,7 @@ namespace letterman {
 	class Device
 	{
 		public:
+		Device() {}
 		virtual ~Device() {}
 
 		const DeviceName& name() const {
@@ -53,7 +54,8 @@ namespace letterman {
 		}
 
 		virtual std::string toString(int padding) const = 0;
-		virtual std::string toRawString(int padding) const = 0;
+		virtual const std::string osDeviceName() const
+		{ return ""; }
 
 		friend class MountedDevices;
 
@@ -71,19 +73,15 @@ namespace letterman {
 
 		virtual std::string toString(int padding) const;
 
-		inline virtual std::string toRawString(int padding) const {
-			return RawDevice::toString(padding);
-		}
-
 		private:
 		std::string _data;
 	};
 
-	class MbrPartitionDevice : public RawDevice
+	class MbrPartitionDevice : public Device
 	{
 		public:
-		MbrPartitionDevice(const std::string& data, uint32_t disk, uint64_t offset)
-		: RawDevice(data), _disk(disk), _offset(offset) {}
+		MbrPartitionDevice(uint32_t disk, uint64_t offset)
+		: _disk(disk), _offset(offset) {}
 
 		virtual ~MbrPartitionDevice() {}
 
@@ -94,11 +92,11 @@ namespace letterman {
 		uint64_t _offset;
 	};
 
-	class GuidPartitionDevice : public RawDevice
+	class GuidPartitionDevice : public Device
 	{
 		public:
-		GuidPartitionDevice(const std::string& data, const std::string& guid)
-		: RawDevice(data), _guid(guid)
+		GuidPartitionDevice(const std::string& guid)
+		: _guid(guid)
 		{}
 
 		virtual ~GuidPartitionDevice() {}
@@ -109,12 +107,12 @@ namespace letterman {
 		std::string _guid;
 	};
 
-	class GenericDevice : public RawDevice
+	class GenericDevice : public Device
 	{
 		public:
-		GenericDevice(const std::string& data, const std::string& path, 
+		GenericDevice(const std::string& path, 
 				const std::string& guid)
-		: RawDevice(data), _path(path), _guid(guid)
+		: _path(path), _guid(guid)
 		{}
 
 		virtual ~GenericDevice() {}

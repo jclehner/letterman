@@ -1,7 +1,9 @@
 #include <algorithm>
+#include <unistd.h>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include "exception.h"
 #include "device.h"
 using namespace std;
 
@@ -11,6 +13,17 @@ namespace letterman {
 
 		void capitalize(string& str) {
 			transform(str.begin(), str.end(), str.begin(), ::toupper);
+		}
+
+		string readlink(const string& path)
+		{
+			char buf[1024];
+			ssize_t len = ::readlink(path.c_str(), buf, sizeof(buf) - 1);
+			if (len == -1) {
+				throw ErrnoException("readlink");
+			}
+
+			return string(buf, len);
 		}
 
 		static const char* GUID_DEVINTERFACE_CDCHANGER =
@@ -83,16 +96,17 @@ namespace letterman {
 	string RawDevice::toString(int padding) const
 	{
 		ostringstream ostr;
+		ostr << hex << setfill('0');
 
 		for (size_t i = 0; i < _data.size(); i += 16) {
 			if (i != 0) ostr << endl;
-			ostr << string(padding, ' ') << setw(4) << setfill('0') << setbase(16) << i << " ";
+			ostr << string(padding, ' ') << setw(4) << i << " ";
 			string ascii;
 			for (size_t k = 0; k != 16; ++k) {
 				if (k == 8) ostr << " ";
 				if (i + k < _data.size()) {
 					int c = _data[i + k] & 0xff;
-					ostr << " " << setw(2) << setfill('0') << setbase(16) << c;
+					ostr << " " << setw(2) << c;
 					ascii += isprint(c) ? c : '.';
 				} else {
 					ostr << "   ";
@@ -133,3 +147,7 @@ namespace letterman {
 		return ostr.str();
 	}
 }
+
+#ifdef __linux__
+#include "device_linux.icc"
+#endif
