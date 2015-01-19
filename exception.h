@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <cerrno>
+#include <string>
 
 namespace letterman {
 	class ErrnoException : public std::exception
