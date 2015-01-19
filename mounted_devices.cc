@@ -196,7 +196,7 @@ namespace letterman {
 			int letter = 0;
 			string key(toString(hivex_value_key(_hive, *values)));
 
-			if (key.find("\\DosMappings\\") == string::npos) {
+			if (key.find("\\DosDevices\\") == string::npos) {
 				// do something here
 			} else if (key.size() != 14 || key[key.size() - 1] != ':') {
 				throw runtime_error("Invalid key " + key);

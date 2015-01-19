@@ -1,3 +1,4 @@
+#include <iostream>
 #include "devtree.h"
 using namespace std;
 
@@ -5,34 +6,62 @@ namespace letterman {
 
 	// The first char is NUL, so we don't have collisions with
 	// any property values (which are all human readable).
-	const std::string DevTree::kIgnoreValue("\0\1", 2);
-	const std::string DevTree::kAnyValue("\0\2", 2);
-	const std::string DevTree::kNoValue("\0\3", 2);
+	const string DevTree::kIgnoreValue("\0kIgnoreValue", 2);
+	const string DevTree::kAnyValue("\0kAnyValue", 2);
+	const string DevTree::kNoValue("\0kNoValue", 2);
+
+	const string DevTree::kNoMatchIfSetAsPropKey("\0kNoMatchIfSetAsPropKey", 2);
+
+	const string DevTree::kPropDiskId = "kPropDiskId";
 
 	bool DevTree::arePropsMatching(
 			const Properties& all, const Properties& criteria)
 	{
-		for (auto& e : criteria) {
-			if (e.first == kIgnoreValue) continue;
+		for (auto& crit : criteria) {
 
-			auto iter = all.find(e.first);
+			if (crit.second == kIgnoreValue) continue;
+
+			auto iter = all.find(crit.first);
 			bool exists = iter != all.end();
-
-			if (e.first == kAnyValue && !exists) {
+			if (crit.first == kNoMatchIfSetAsPropKey) {
 				return false;
 			}
 
-			if (e.first == kNoValue && exists) {
+			if (crit.second == kNoValue && exists) {
 				return false;
 			}
 
-			if (e.second != iter->second) {
+			if (exists && (crit.second != iter->second && crit.second != kAnyValue)) {
 				return false;
 			}
+
+			if (!exists)
+				return false;
 		}
 
 		return true;
 	}
+
+
+	map<string, Properties> DevTree::getDisksOrPartitions(
+			const Properties& props, bool getDisks)
+	{
+		map<string, Properties> ret;
+
+		for (auto& e : getAllDevices()) {
+
+			if(!(getDisks ? isDisk(e.second) : isPartition(e.second))) {
+				continue;
+			}
+
+			if (props.empty() || DevTree::arePropsMatching(e.second, props)) {
+				ret.insert(e);
+			}
+		}
+
+		return ret;
+	}
+
 }
 
 // OS-specific stuff is in devtree_<os>.cc

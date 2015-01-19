@@ -3,8 +3,11 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <fstream>
 #include "exception.h"
+#include "devtree.h"
 #include "mapping.h"
+#include "util.h"
 using namespace std;
 
 namespace letterman {
@@ -74,7 +77,35 @@ namespace letterman {
 			return guid;
 		}
 
+		string findDiskWithMbrId(uint32_t id)
+		{
+			for (auto& disk : DevTree::getDisks(Properties())) {
+#ifdef __linux__
+				if (!disk.second["ID_DRIVE_FLOPPY"].empty()) continue;
+#endif
+
+				ifstream mbr(disk.first.c_str());
+				if (!mbr.good() || !mbr.seekg(440)) {
+					continue;
+				}
+
+				uint32_t mbrId;
+				if(!mbr.read(reinterpret_cast<char*>(&mbrId), 4)) {
+					continue;
+				}
+
+				if(le32toh(mbrId) == id) {
+					return disk.first;
+				}
+			}
+
+			return "";
+		}
+
 	}
+
+	const string Mapping::kOsNameUnknown("\0\1", 2);
+	const string Mapping::kOsNameNotAttached("\0\2", 2);
 
 	MappingName::MappingName(char letter, const string& guid)
 	: _letter(letter), _guid(guid)
@@ -85,7 +116,7 @@ namespace letterman {
 	std::string MappingName::key() const
 	{
 		if (_letter) {
-			return string("\\DosMappings\\") + _letter + ":";
+			return string("\\DosDevices\\") + _letter + ":";
 		} else if (!_guid.empty()) {
 			return "\\??\\Volume{" + _guid + "}";
 		} else {
@@ -133,6 +164,96 @@ namespace letterman {
 		return ostr.str();
 	}
 
+	string MbrPartitionMapping::osDeviceName() const
+	{
+		ostringstream ostr;
+		ostr << setfill('0') << hex << setw(8) << _disk;
+
+		Properties criteria = {{ DevTree::kPropMbrId, ostr.str() }};
+
+		string disk;
+		map<string, Properties> result(DevTree::getDisks(criteria));
+
+		if (result.empty()) {
+			disk = findDiskWithMbrId(_disk);
+		} else {
+			// TODO handle the not-so-fringe case where getDisks() returns
+			// more than one result
+			disk = result.begin()->first;
+		}
+
+		if (disk.empty()) {
+			return kOsNameUnknown;
+		} 
+		
+		// We have a disk name, but no partition yet. Do the lookup 
+		// again, this time explicitly specifying the disk and
+		// ignoring the kPropMbrId
+
+		criteria[DevTree::kPropMbrId] = DevTree::kIgnoreValue;
+		criteria[DevTree::kPropDevice] = disk;
+		result = DevTree::getDisks(criteria);
+
+		if (result.empty()) {
+			// This shouldn't happen, since findDiskWithMbrId returned
+			// a disk...
+			return kOsNameUnknown;
+		}
+
+		// Remove the disk, as we are searching for the partition now
+		criteria[DevTree::kPropDevice] = DevTree::kIgnoreValue;
+
+		Properties props = result.begin()->second;
+
+		// Searching for a partition by offset only might yield
+		// ambigous results, especially if the partition in question
+		// is the first partition with an offset of 2 or 63 blocks
+		// (many partitioning utilities do this). We thus limit our
+		// search to partitions with a matching disk id.
+		criteria[DevTree::kPropDiskId] = props[DevTree::kPropDiskId];
+
+		// Try blocks offset first
+		criteria[DevTree::kPropPartOffsetBlocks] = util::toString(_offset / 512);
+
+		result = DevTree::getPartitions(criteria);
+		if (!result.empty()) {
+			return result.begin()->first;
+		}
+
+		// Now try byte offset
+		criteria[DevTree::kPropPartOffsetBytes] = util::toString(_offset);
+		criteria[DevTree::kPropPartOffsetBlocks] = DevTree::kIgnoreValue;
+
+		result = DevTree::getPartitions(criteria);
+		if (!result.empty()) {
+			return result.begin()->first;
+		}
+
+#ifdef __linux__
+		return kOsNameNotAttached;
+#else
+		// On OSX, most of the above queries will fail, so we can't say
+		// that the device is not attached.
+		return kOsNameUnknown;
+#endif
+	}
+
+	string GuidPartitionMapping::osDeviceName() const
+	{
+		string guid(_guid);
+		transform(guid.begin(), guid.end(), guid.begin(), ::tolower);
+
+		Properties criteria = {{ DevTree::kPropPartUuid, guid }};
+		map<string, Properties> result(DevTree::getPartitions(criteria));
+		if (!result.empty()) {
+			// TODO handle the fringe case where there is more 
+			// than one result!
+			return result.begin()->first;
+		}
+
+		return kOsNameNotAttached;
+	}
+
 	string GuidPartitionMapping::toString(int padding) const
 	{
 		ostringstream ostr(string(padding, ' '));
@@ -147,9 +268,3 @@ namespace letterman {
 		return ostr.str();
 	}
 }
-
-#if defined __linux__
-#include "device_linux.icc"
-#elif defined __apple__
-#include "device_macosx.icc"
-#endif
