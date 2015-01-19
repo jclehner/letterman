@@ -4,7 +4,7 @@
 #include <sstream>
 #include <iomanip>
 #include "exception.h"
-#include "device.h"
+#include "mapping.h"
 using namespace std;
 
 namespace letterman {

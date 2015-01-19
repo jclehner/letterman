@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include <hivex.h>
-#include "device.h"
+#include "mapping.h"
 
 namespace letterman {
 
