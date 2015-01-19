@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 			MountedDevices (argv[1], true).remove(arg1[0]);
 		} else if (action == "list") {
 			for (auto&& device : MountedDevices(argv[1], false).list(0)) {
-				cout << device->name() << "    " << device->osDeviceName() << endl;
+				cout << device->name() << "    " << device->osMappingName() << endl;
 			}
 		} else {
 			cerr << action << ": unknown action" << endl;

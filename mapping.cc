@@ -76,16 +76,16 @@ namespace letterman {
 
 	}
 
-	DeviceName::DeviceName(char letter, const string& guid)
+	MappingName::MappingName(char letter, const string& guid)
 	: _letter(letter), _guid(guid)
 	{
 		capitalize(_guid);
 	}
 
-	std::string DeviceName::key() const
+	std::string MappingName::key() const
 	{
 		if (_letter) {
-			return string("\\DosDevices\\") + _letter + ":";
+			return string("\\DosMappings\\") + _letter + ":";
 		} else if (!_guid.empty()) {
 			return "\\??\\Volume{" + _guid + "}";
 		} else {
@@ -93,7 +93,7 @@ namespace letterman {
 		}
 	}
 
-	string RawDevice::toString(int padding) const
+	string RawMapping::toString(int padding) const
 	{
 		ostringstream ostr;
 		ostr << hex << setfill('0');
@@ -119,7 +119,7 @@ namespace letterman {
 		return ostr.str();
 	}
 
-	string MbrPartitionDevice::toString(int padding) const
+	string MbrPartitionMapping::toString(int padding) const
 	{
 		ostringstream ostr(string(padding, ' '));
 		ostr << setfill('0') << hex;
@@ -133,14 +133,14 @@ namespace letterman {
 		return ostr.str();
 	}
 
-	string GuidPartitionDevice::toString(int padding) const
+	string GuidPartitionMapping::toString(int padding) const
 	{
 		ostringstream ostr(string(padding, ' '));
 		ostr << "GUID Partition " << _guid;
 		return ostr.str();
 	}
 
-	string GenericDevice::toString(int padding) const
+	string GenericMapping::toString(int padding) const
 	{
 		ostringstream ostr(string(padding, ' '));
 		ostr << devInterfaceGuidToName(_guid) << " " << _path;

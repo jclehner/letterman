@@ -115,7 +115,7 @@ namespace letterman {
 		}
 	}
 
-	string MbrPartitionDevice::osDeviceName() const
+	string MbrPartitionMapping::osDeviceName() const
 	{
 		ostringstream ostr;
 		ostr << setfill('0') << hex << setw(8) << _disk;
@@ -182,7 +182,7 @@ namespace letterman {
 		return disk + "? (offset " + util::toString(_offset / 512) + " blocks)";
 	}
 
-	string GuidPartitionDevice::osDeviceName() const
+	string GuidPartitionMapping::osDeviceName() const
 	{
 		string guid(_guid);
 		transform(guid.begin(), guid.end(), guid.begin(), ::tolower);

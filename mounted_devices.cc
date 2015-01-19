@@ -61,7 +61,7 @@ namespace letterman {
 			return ostr.str();
 		}
 
-		Device* createDevice(const string& data)
+		Mapping* createMapping(const string& data)
 		{
 			const char* buf = data.c_str();
 			size_t len = data.size();
@@ -70,18 +70,18 @@ namespace letterman {
 				uint32_t disk = le32toh(*reinterpret_cast<const uint32_t*>(buf));
 				uint64_t offset = le64toh(*reinterpret_cast<const uint64_t*>(buf + 4));
 
-				return new MbrPartitionDevice(disk, offset);
+				return new MbrPartitionMapping(disk, offset);
 			} else if (len >= 8) {
 				uint64_t magic = *reinterpret_cast<const uint64_t*>(buf);
 				if (len == 24 && magic == UINT64_C(0x3a44493a4f494d44)) { // "DMIO:ID:"
-					return new GuidPartitionDevice(parseGuid(buf, 8));
+					return new GuidPartitionMapping(parseGuid(buf, 8));
 				} else if (magic == UINT64_C(0x005c003f003f005c) // "\??\"
 						|| magic == UINT64_C(0x005f003f003f005f)) { // "_??_"
 					if (len >= (36 + 2) * 2) {
 						string bytes(fromWstring(data));
 
-						// Data is composed of the "Device Instance Path", with an
-						// appended GUID specifying the "Device Interface"
+						// Data is composed of the "Mapping Instance Path", with an
+						// appended GUID specifying the "Mapping Interface"
 						// (http://msdn.microsoft.com/en-us/library/windows/hardware/ff545813%28v=vs.85%29.aspx)
 						// Note that the GUID is surrounded by {}
 						size_t guidBegin = bytes.size() - (36 + 2);
@@ -99,11 +99,11 @@ namespace letterman {
 							instancePath.resize(instancePath.size() - 1);
 						}
 
-						return new GenericDevice(instancePath, intfGuid);
+						return new GenericMapping(instancePath, intfGuid);
 					}
 				}
 			}
-			return new RawDevice(data);
+			return new RawMapping(data);
 		}
 
 		struct Value
@@ -154,7 +154,7 @@ namespace letterman {
 
 		void getValue(hive_h* hive, hive_node_h node, char letter, Value& out)
 		{
-			if (!getValue(hive, node, DeviceName::letter(letter).key(), out)) {
+			if (!getValue(hive, node, MappingName::letter(letter).key(), out)) {
 				throw UserFault(string("Letter is not mapped to any volume: ") + letter + ":");
 			}
 		}
@@ -183,20 +183,20 @@ namespace letterman {
 		hivex_close(_hive);
 	}
 
-	vector<unique_ptr<Device>> MountedDevices::list(int flags) const
+	vector<unique_ptr<Mapping>> MountedDevices::list(int flags) const
 	{
 		hive_value_h *values = hivex_node_values(_hive, _node);
 		if (!values) {
 			throw ErrnoException("hivex_node_values");
 		}
 
-		vector<unique_ptr<Device>> devices;
+		vector<unique_ptr<Mapping>> devices;
 
 		for (; *values; ++values) {
 			int letter = 0;
 			string key(toString(hivex_value_key(_hive, *values)));
 
-			if (key.find("\\DosDevices\\") == string::npos) {
+			if (key.find("\\DosMappings\\") == string::npos) {
 				// do something here
 			} else if (key.size() != 14 || key[key.size() - 1] != ':') {
 				throw runtime_error("Invalid key " + key);
@@ -213,10 +213,10 @@ namespace letterman {
 
 			if (!len) continue;
 
-			unique_ptr<Device> device(createDevice(toString(buf, len)));
+			unique_ptr<Mapping> device(createMapping(toString(buf, len)));
 
 			if (letter) {
-				device->_name = DeviceName::letter(letter);
+				device->_name = MappingName::letter(letter);
 			} else {
 				if (!(flags & LIST_WITHOUT_LETTER)) {
 					continue;
@@ -226,7 +226,7 @@ namespace letterman {
 					throw new runtime_error("Invalid key " + key);
 				}
 
-				device->_name = DeviceName::volume(key.substr(11, 36));
+				device->_name = MappingName::volume(key.substr(11, 36));
 			}
 
 			devices.push_back(move(device));
@@ -266,7 +266,7 @@ namespace letterman {
 		Value val;
 		getValue(_hive, _node, from, val);
 
-		string key(DeviceName::letter(to).key());
+		string key(MappingName::letter(to).key());
 
 		hive_value_h handle = hivex_node_get_value(_hive, _node, key.c_str());
 		if (handle) {
@@ -283,7 +283,7 @@ namespace letterman {
 			}
 
 			// Zero length means removed (by us) - Windows will boot
-			// happily with a zero-length \\DosDevices\\X: entry.
+			// happily with a zero-length \\DosMappings\\X: entry.
 		}
 
 		val.setKey(key);

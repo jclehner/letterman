@@ -6,24 +6,24 @@
 
 namespace letterman {
 
-	class DeviceName
+	class MappingName
 	{
 		public:
 
-		DeviceName()
+		MappingName()
 		: _letter(0), _guid("") {}
 
-		static DeviceName letter(char letter) {
-			return DeviceName(letter, "");
+		static MappingName letter(char letter) {
+			return MappingName(letter, "");
 		}
 
-		static DeviceName volume(const std::string& guid) {
-			return DeviceName(0, guid);
+		static MappingName volume(const std::string& guid) {
+			return MappingName(0, guid);
 		}
 
 		std::string key() const;
 
-		friend std::ostream& operator<<(std::ostream& os, const DeviceName& name)
+		friend std::ostream& operator<<(std::ostream& os, const MappingName& name)
 		{
 			if (name._letter) {
 				os << name._letter << ":";
@@ -37,39 +37,39 @@ namespace letterman {
 		}
 
 		private:
-		DeviceName(char letter, const std::string& guid);
+		MappingName(char letter, const std::string& guid);
 
 		char _letter;
 		std::string _guid;
 	};
 
-	class Device
+	class Mapping
 	{
 		public:
-		Device() {}
-		virtual ~Device() {}
+		Mapping() {}
+		virtual ~Mapping() {}
 
-		const DeviceName& name() const {
+		const MappingName& name() const {
 			return _name;
 		}
 
 		virtual std::string toString(int padding) const = 0;
-		virtual std::string osDeviceName() const
+		virtual std::string osMappingName() const
 		{ return ""; }
 
 		friend class MountedDevices;
 
 		private:
-		DeviceName _name;
+		MappingName _name;
 	};
 
-	class RawDevice : public Device 
+	class RawMapping : public Mapping 
 	{
 		public:
-		RawDevice(const std::string& data)
+		RawMapping(const std::string& data)
 		: _data(data) {}
 
-		virtual ~RawDevice() {}
+		virtual ~RawMapping() {}
 
 		virtual std::string toString(int padding) const;
 
@@ -77,47 +77,47 @@ namespace letterman {
 		std::string _data;
 	};
 
-	class MbrPartitionDevice : public Device
+	class MbrPartitionMapping : public Mapping
 	{
 		public:
-		MbrPartitionDevice(uint32_t disk, uint64_t offset)
+		MbrPartitionMapping(uint32_t disk, uint64_t offset)
 		: _disk(disk), _offset(offset) {}
 
-		virtual ~MbrPartitionDevice() {}
+		virtual ~MbrPartitionMapping() {}
 
 		virtual std::string toString(int padding) const;
-		virtual std::string osDeviceName() const;
+		virtual std::string osMappingName() const;
 
 		private:
 		uint32_t _disk;
 		uint64_t _offset;
 	};
 
-	class GuidPartitionDevice : public Device
+	class GuidPartitionMapping : public Mapping
 	{
 		public:
-		GuidPartitionDevice(const std::string& guid)
+		GuidPartitionMapping(const std::string& guid)
 		: _guid(guid)
 		{}
 
-		virtual ~GuidPartitionDevice() {}
+		virtual ~GuidPartitionMapping() {}
 
 		virtual std::string toString(int padding) const;
-		virtual std::string osDeviceName() const;
+		virtual std::string osMappingName() const;
 
 		private:
 		std::string _guid;
 	};
 
-	class GenericDevice : public Device
+	class GenericMapping : public Mapping
 	{
 		public:
-		GenericDevice(const std::string& path, 
+		GenericMapping(const std::string& path, 
 				const std::string& guid)
 		: _path(path), _guid(guid)
 		{}
 
-		virtual ~GenericDevice() {}
+		virtual ~GenericMapping() {}
 
 		virtual std::string toString(int padding) const;
 
