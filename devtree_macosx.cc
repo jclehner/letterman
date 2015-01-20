@@ -145,6 +145,10 @@ namespace letterman {
 	const string DevTree::kPropPartUuid = fromStringRef(
 			kDADiskDescriptionMediaUUIDKey, false);
 
+	const string DevTree::kPropMbrId = DevTree::kNoMatchIfSetAsPropKey;
+	const string DevTree::kPropPartOffsetBlocks = DevTree::kNoMatchIfSetAsPropKey;
+	const string DevTree::kPropPartOffsetBytes = DevTree::kNoMatchIfSetAsPropKey;
+
 	map<string, Properties> DevTree::getDisks(const Properties& props)
 	{
 		return getDisksOrPartitions(props, true);
