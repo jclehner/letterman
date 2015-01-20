@@ -1,0 +1,21 @@
+usage: letterman [hive arg] [action] [action arguments]
+
+hive arg:
+	no hive arg -> probe all NTFS partitions
+	--probe
+	--sysdrive /dev/sda1
+	--sysroot /mnt/disk/Windows
+	--sysdir /mnt/disk/Windows/system32
+	--cfgdir /mnt/disk/Windows/system32/config
+	--hive /mnt/disk/Windows/system32/config/SYSTEM
+
+actions:
+	add:
+		add X: /dev/sda2
+		add X: /mnt/disk/Foobar
+
+		add X: --mbr --disk 0xdeadbeef --offset-blocks 63
+		add X: --mbr --disk 0xdeadbeef --offset-bytes 32256
+
+		add X: --guid XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+	
