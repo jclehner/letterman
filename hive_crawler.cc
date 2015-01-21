@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <memory>
+#include <vector>
 #include "hive_crawler.h"
 #include "exception.h"
 #include "devtree.h"
@@ -85,16 +86,30 @@ namespace letterman {
 			throw UserFault(string("No such ") + (findDir ? "directory" : "file") + 
 					" in " + path + ": " + name);
 		}
+
+
 	}
 
-	set<string> getAllSysDrives()
+	set<WindowsInstall> getAllSysDrives()
 	{
-		set<string> ret;
+		set<WindowsInstall> ret;
 		Properties props = {{ DevTree::kPropIsNtfs, "1" }};
 
 		for (auto& e : DevTree::getPartitions(props)) {
 			try {
-				ret.insert(hiveFromSysDrive(e.first));
+				WindowsInstall wi;
+
+				wi.path = e.second[DevTree::kPropMountPoint];
+				if (wi.path.empty()) {
+					wi.isDevice = true;
+					wi.path = e.first;
+				} else {
+					wi.isDevice = false;
+				}
+
+				// Ignore return value, just check!
+				hiveFromSysDrive(wi.path);
+				ret.insert(wi);
 			} catch (const UserFault& e) {
 				// ignore
 			}

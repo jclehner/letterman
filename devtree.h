@@ -18,6 +18,7 @@ namespace letterman {
 		static const std::string kPropMinor;
 		static const std::string kPropPartUuid;
 
+		static const std::string kPropMountPoint;
 		static const std::string kPropMbrId;
 		static const std::string kPropPartOffsetBlocks;
 		static const std::string kPropPartOffsetBytes;

@@ -76,6 +76,9 @@ namespace letterman {
 	const string DevTree::kPropPartUuid = fromStringRef(
 			kDADiskDescriptionMediaUUIDKey, false);
 
+	const string DevTree::kPropMountPoint = fromStringRef(
+			kDADiskDescriptionVolumePathKey, false);
+
 	const string DevTree::kPropMbrId = DevTree::kNoMatchIfSetAsPropKey;
 	const string DevTree::kPropPartOffsetBlocks = DevTree::kNoMatchIfSetAsPropKey;
 	const string DevTree::kPropPartOffsetBytes = DevTree::kNoMatchIfSetAsPropKey;
@@ -132,6 +135,11 @@ namespace letterman {
 
 				if (isPartition(props)) {
 					props[kPropIsNtfs] = (props[kPropFsType] == "ntfs" ? "1" : "0");
+					if (props[kPropMountPoint].find("file://") == 0) {
+						props[kPropMountPoint] = props[kPropMountPoint].substr(7);
+					} else {
+						props[kPropMountPoint] = "";
+					}
 				}
 
 				ret[props[kPropDevice]] = props;

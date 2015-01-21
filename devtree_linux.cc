@@ -1,6 +1,7 @@
 #ifdef __linux__
 #include <libudev.h>
 #include <algorithm>
+#include <mntent.h>
 #include <fstream>
 #include <sstream>
 #include <memory>
@@ -27,6 +28,22 @@ namespace letterman {
 		{
 			transform(str.begin(), str.end(), str.begin(), ::toupper);
 		}
+
+		string getMountPoint(const string& device)
+		{
+			FILE* fp = setmntent("/proc/mounts", "r");
+			if (!fp) fp = setmntent("/etc/mtab", "r");
+			if (!fp) throw ErrnoException("setmntent");
+
+			struct mntent* mnt;
+			while ((mnt = getmntent(fp))) {
+				if (device == mnt->mnt_fsname) {
+					return mnt->mnt_dir;
+				}
+			}
+
+			return "";
+		}
 	}
 
 	const string DevTree::kPropDevice = "DEVNAME";
@@ -35,6 +52,7 @@ namespace letterman {
 	const string DevTree::kPropFsLabel = "ID_FS_LABEL";
 	const string DevTree::kPropPartUuid = "ID_PART_ENTRY_UUID";
 
+	const string DevTree::kPropMountPoint = "kPropMountPoint";
 	const string DevTree::kPropMbrId = "ID_PART_TABLE_UUID";
 	const string DevTree::kPropPartOffsetBlocks = "ID_PART_ENTRY_OFFSET"; 
 	const string DevTree::kPropPartOffsetBytes = "UDISKS_PARTITION_OFFSET";
@@ -80,6 +98,7 @@ namespace letterman {
 				} else if (isPartition(props)) {
 					props[kPropDiskId] = props["ID_PART_ENTRY_DISK"];
 					props[kPropIsNtfs] = (props["ID_FS_TYPE"] == "ntfs" ? "1" : "0");
+					props[kPropMountPoint] = getMountPoint(props["DEVNAME"]);
 				} else {
 					continue;
 				}
