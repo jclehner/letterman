@@ -72,17 +72,18 @@ int main(int argc, char **argv)
 
 			MountedDevices (argv[1], true).remove(arg1[0]);
 		} else if (action == "list") {
+
 			for (auto&& mapping : MountedDevices(argv[1]).list()) {
 				string device(mapping->osDeviceName());
 
-				cout << mapping->name() << "    ";
+				cout << mapping->name() << "  ";
 
 				if (device == Mapping::kOsNameUnknown) {
-					cout << "(unknown) " << mapping->toString(0);
+					cout << "? " << mapping->toString(0);
 				} else if (device == Mapping::kOsNameNotAttached) {
-					cout << "(not attached) " << mapping->toString(0);
+					cout << "- " << mapping->toString(0);
 				} else {
-					cout << mapping->osDeviceName();
+					cout << "* " << mapping->osDeviceName();
 				}
 
 				cout << endl;
