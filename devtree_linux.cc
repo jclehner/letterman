@@ -35,6 +35,9 @@ namespace letterman {
 
 	map<string, Properties> DevTree::getAllDevices()
 	{
+		static map<string, Properties> entries;
+		if (!entries.empty()) return entries;
+
 		UdevUniquePtr<udev> udev(udev_new(), [] (struct udev* p) { udev_unref(p); });
 		if (!udev) {
 			throw ErrnoException("udev_new");
@@ -49,7 +52,6 @@ namespace letterman {
 		udev_list_entry *devices, *dev_list_entry;
 		devices = udev_enumerate_get_list_entry(enumerate.get());
 
-		map<string, Properties> entries;
 
 		udev_list_entry_foreach(dev_list_entry, devices) {
 

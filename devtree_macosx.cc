@@ -79,6 +79,9 @@ namespace letterman {
 
 	map<string, Properties> DevTree::getAllDevices()
 	{
+		static map<string, Properties> ret;
+		if (!ret.empty()) return ret;
+
 		kern_return_t kr;
 		io_iterator_t iter;
 
@@ -93,7 +96,6 @@ namespace letterman {
 		DASessionRef session = DASessionCreate(kCFAllocatorDefault);
 		if (!session) throw ErrnoException("DASessionCreate");
 
-		map<string, Properties> ret;
 		Properties props;
 		io_service_t service;
 
