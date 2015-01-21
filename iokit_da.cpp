@@ -120,10 +120,6 @@ int main(int argc, char** argv)
 		cout << "* " << key.first << endl;
 		cout << "  " << key.second << endl;
 	}
-
-	cout << endl;
-
-	letterman::testIoKitFind();
 }
 
 

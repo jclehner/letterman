@@ -1,3 +1,4 @@
+#ifdef __linux__
 #include <libudev.h>
 #include <fstream>
 #include <sstream>
@@ -87,3 +88,4 @@ namespace letterman {
 		return i != props.end() && i->second == (isDisk ? "disk" : "partition");
 	}
 }
+#endif

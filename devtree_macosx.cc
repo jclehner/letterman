@@ -29,6 +29,9 @@ namespace letterman {
 		static const string kPropIsDisk = fromStringRef(
 				kDADiskDescriptionMediaWholeKey, false);
 
+		static const string kPropBsdUnit = fromStringRef(
+				kDADiskDescriptionMediaBSDUnitKey);
+
 		string toString(CFTypeRef ref)
 		{
 			CFTypeID id = CFGetTypeID(ref);
@@ -50,82 +53,7 @@ namespace letterman {
 				return fromStringRef(str);
 			}
 
-			throw invalid_argument("Unhandled type id");
-		}
-
-		map<string, Properties> getAllDevices()
-		{
-			kern_return_t kr;
-			io_iterator_t iter;
-
-			kr = IOServiceGetMatchingServices(
-					kIOMasterPortDefault,
-					IOServiceMatching(kIOMediaClass),
-					&iter);
-
-			if (kr != KERN_SUCCESS)
-				throw ErrnoException("IOServiceGetMatchingServices");
-
-			DASessionRef session = DASessionCreate(kCFAllocatorDefault);
-			if (!session) throw ErrnoException("DASessionCreate");
-
-			map<string, Properties> ret;
-			Properties props;
-			io_service_t service;
-
-			while ((service = IOIteratorNext(iter))) {
-				DADiskRef disk = DADiskCreateFromIOMedia(
-						kCFAllocatorDefault, session, service);
-
-				CFDictionaryRef dict = DADiskCopyDescription(disk);
-				CFIndex size = CFDictionaryGetCount(dict);
-
-				unique_ptr<CFTypeRef[]> keys(new CFTypeRef[size]);
-				unique_ptr<CFTypeRef[]> values(new CFTypeRef[size]);
-
-				CFDictionaryGetKeysAndValues(
-						dict,
-						reinterpret_cast<const void**>(keys.get()),
-						reinterpret_cast<const void**>(values.get()));
-
-				for (CFIndex i = 0; i != size; ++i) {
-					CFTypeRef keyRef = keys.get() + i;
-					CFTypeRef valueRef = values.get() + i;
-
-					props[toString(keyRef)] = toString(valueRef);
-
-					CFRelease(keyRef);
-					CFRelease(valueRef);
-				}
-
-				ret[props[DevTree::kPropDevice]] = props;
-				props.clear();
-
-				CFRelease(dict);
-				CFRelease(disk);
-			}
-
-			CFRelease(session);
-
-			return ret;
-		}
-
-		map<string, Properties> getDisksOrPartitions(
-				const Properties& props, bool disks)
-		{
-			map<string, Properties> ret;
-
-			for (auto& e : getAllDevices()) {
-				if (e.second[kPropIsDisk] == (disks ? "1" : "0")) {
-					continue;
-				}
-
-				if (DevTree::arePropsMatching(e.second, props)) {
-					ret[e.first] = e.second;
-				}
-			}
-
-			return ret;
+			return fromStringRef(CFCopyDescription(ref));
 		}
 
 	}
@@ -149,14 +77,71 @@ namespace letterman {
 	const string DevTree::kPropPartOffsetBlocks = DevTree::kNoMatchIfSetAsPropKey;
 	const string DevTree::kPropPartOffsetBytes = DevTree::kNoMatchIfSetAsPropKey;
 
-	map<string, Properties> DevTree::getDisks(const Properties& props)
+	map<string, Properties> DevTree::getAllDevices()
 	{
-		return getDisksOrPartitions(props, true);
+		kern_return_t kr;
+		io_iterator_t iter;
+
+		kr = IOServiceGetMatchingServices(
+				kIOMasterPortDefault,
+				IOServiceMatching(kIOMediaClass),
+				&iter);
+
+		if (kr != KERN_SUCCESS)
+			throw ErrnoException("IOServiceGetMatchingServices");
+
+		DASessionRef session = DASessionCreate(kCFAllocatorDefault);
+		if (!session) throw ErrnoException("DASessionCreate");
+
+		map<string, Properties> ret;
+		Properties props;
+		io_service_t service;
+
+		while ((service = IOIteratorNext(iter))) {
+			DADiskRef disk = DADiskCreateFromIOMedia(
+					kCFAllocatorDefault, session, service);
+
+			CFDictionaryRef dict = DADiskCopyDescription(disk);
+			CFIndex size = CFDictionaryGetCount(dict);
+
+			unique_ptr<CFTypeRef[]> keys(new CFTypeRef[size]);
+			unique_ptr<CFTypeRef[]> values(new CFTypeRef[size]);
+
+			CFDictionaryGetKeysAndValues(
+					dict,
+					reinterpret_cast<const void**>(keys.get()),
+					reinterpret_cast<const void**>(values.get()));
+
+			for (CFIndex i = 0; i != size; ++i) {
+				CFTypeRef keyRef = keys.get()[i];
+				CFTypeRef valueRef = values.get()[i];
+
+				props[toString(keyRef)] = toString(valueRef);
+
+				CFRelease(keyRef);
+				CFRelease(valueRef);
+			}
+
+			if (!props.empty()) {
+				props[kPropDiskId] = props[kPropMajor] + ":" + props[kPropBsdUnit];
+				ret[props[kPropDevice]] = props;
+			}
+
+			props.clear();
+
+			//CFRelease(dict);
+			CFRelease(disk);
+		}
+
+		CFRelease(session);
+
+		return ret;
 	}
 
-	map<string, Properties> DevTree::getPartitions(const Properties& props)
+	bool DevTree::isDiskOrPartition(const Properties& props, bool isDisk)
 	{
-		return getDisksOrPartitions(props, false);
+		auto i = props.find(kPropIsDisk);
+		return i != props.end() && i->second == (isDisk ? "1" : "0");
 	}
 }
 #endif
