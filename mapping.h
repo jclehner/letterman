@@ -59,7 +59,7 @@ namespace letterman {
 
 		virtual std::string toString(int padding) const = 0;
 		virtual std::string osDeviceName() const
-		{ return ""; }
+		{ return kOsNameUnknown; }
 
 		friend class MountedDevices;
 
@@ -75,7 +75,7 @@ namespace letterman {
 
 		virtual ~RawMapping() {}
 
-		virtual std::string toString(int padding) const;
+		virtual std::string toString(int padding) const override;
 
 		private:
 		std::string _data;
@@ -89,8 +89,8 @@ namespace letterman {
 
 		virtual ~MbrPartitionMapping() {}
 
-		virtual std::string toString(int padding) const;
-		virtual std::string osDeviceName() const;
+		virtual std::string toString(int padding) const override;
+		virtual std::string osDeviceName() const override;
 
 		private:
 		uint32_t _disk;
@@ -106,8 +106,8 @@ namespace letterman {
 
 		virtual ~GuidPartitionMapping() {}
 
-		virtual std::string toString(int padding) const;
-		virtual std::string osDeviceName() const;
+		virtual std::string toString(int padding) const override;
+		virtual std::string osDeviceName() const override;
 
 		private:
 		std::string _guid;
@@ -123,7 +123,7 @@ namespace letterman {
 
 		virtual ~GenericMapping() {}
 
-		virtual std::string toString(int padding) const;
+		virtual std::string toString(int padding) const override;
 
 		private:
 		std::string _path;
