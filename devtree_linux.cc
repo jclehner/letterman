@@ -1,5 +1,6 @@
 #ifdef __linux__
 #include <libudev.h>
+#include <algorithm>
 #include <fstream>
 #include <sstream>
 #include <memory>
@@ -21,6 +22,10 @@ namespace letterman {
 
 		template<typename T> using UdevUniquePtr = unique_ptr<T, std::function<void(T*)>>;
 
+		void capitalize(string& str)
+		{
+			transform(str.begin(), str.end(), str.begin(), ::toupper);
+		}
 	}
 
 	const string DevTree::kPropDevice = "DEVNAME";
@@ -74,6 +79,8 @@ namespace letterman {
 				} else {
 					continue;
 				}
+
+				capitalize(props[kPropPartUuid]);
 
 				entries[props["DEVNAME"]] = props;
 			}
