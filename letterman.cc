@@ -19,6 +19,9 @@ namespace {
 			case 1:
 				invalid |= (arg[0] < 'A' || arg[0] > 'Z');
 				break;
+
+			default:
+				invalid = true;
 		}
 
 		if (invalid) {
@@ -28,41 +31,91 @@ namespace {
 
 	void requireArgCount(int argc, int n)
 	{
-		if (argc - 2 != n) {
+		if (argc - 1 != n) {
 			ostringstream ostr;
 			ostr << "Action requires " << n << " argument";
-			ostr << (n == 1 ? "" : "s");
+			ostr << (n == 1 ? "" : "s") << ", got " << n << endl;
 			throw UserFault(ostr.str());
 		}
+	}
+
+	string getHiveFromArgs(int argc, char **argv, int& index)
+	{
+		string opt(argv[1]);
+
+		if (opt == "--probe" /*|| argv[1][0] != '-'*/) {
+			set<WindowsInstall> installs(getAllWindowsInstalls());
+			if (installs.empty()) {
+				cerr << "No Windows installations found. Specify manually with" <<
+					"--sysdrive, --sysroot, --sysdir, " << endl;
+				cerr << "or	--hive" << endl;
+				exit(1);
+			} else if (installs.size() > 1) {
+				cerr << "Multiple windows installations found. Specify manually with" << endl;
+				for (auto& install : installs) {
+					cerr << "  " << install << endl;
+				}
+				exit(1);
+			}
+
+			index += 1;
+			return hiveFromSysDrive(installs.begin()->path);
+		}
+
+		if (opt.substr(0, 2) == "--") {
+			if (argc < 3) {
+				cerr << opt << " requires an argument" << endl;
+				exit(1);
+			}
+
+			string arg(argv[2]);
+
+			index += 2;
+
+			if (opt == "--sysdrive") {
+				return hiveFromSysDrive(arg);
+			} else if (opt == "--sysroot") {
+				return hiveFromSysRoot(arg);
+			} else if (opt == "--sysdir") {
+				return hiveFromSysDir(arg);
+			} else if (opt == "--hive") {
+				return arg;
+			}
+
+			cerr << "Unknown option " << opt << endl;
+			exit(1);
+		}
+
+		cerr << "You must specify a Windows installation with" <<
+			"--sysdrive, --sysroot, --sysdir," << endl;
+		cerr << "--hive or use --probe to use auto-detect" << endl;
+		exit(1);
+	}
+
+	void printUsageAndDie() __attribute__((noreturn));
+	void printUsageAndDie()
+	{
+		cerr << "usage: letterman [action] [arguments ...]" << endl;
+		cerr << "actions: list, swap, change, remove" << endl;
+		exit(1);
 	}
 
 }
 
 int main(int argc, char **argv)
 {
-	if (argc < 2) {
-		cerr << "usage: letterman [action] [arguments ...]" << endl;
-		cerr << "actions: list, swap, change, remove" << endl;
-		return 1;
-	}
+	if (argc < 2) printUsageAndDie();
 
-	set<WindowsInstall> installs(getAllWindowsInstalls());
-	if (installs.empty()) {
-		cerr << "No Windows installations found. Specify manually with" << endl;
-		cerr << "--sysdrive, --sysroot" << endl;
-		return 1;
-	} else if (installs.size() > 1) {
-		cerr << "Multiple windows installations found. Specify manually with" << endl;
-		for (auto& install : installs) {
-			cerr << "  " << install << endl;
-		}
-		return 1;
-	}
+	int i = 1;
+	string hive(getHiveFromArgs(argc, argv, i));
 
-	string hive(hiveFromSysDrive(installs.begin()->path));
-	string action(argv[1]);
-	string arg1(argc >= 3 ? argv[2] : "");
-	string arg2(argc >= 4 ? argv[3] : "");
+	argc -= i;
+
+	if (!argc) printUsageAndDie();
+
+	string action(argv[i]);
+	string arg1(argc >= 2 ? argv[i + 1] : "");
+	string arg2(argc >= 3 ? argv[i + 2] : "");
 
 	try {
 		if (action == "swap" || action == "change") {

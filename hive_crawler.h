@@ -12,7 +12,7 @@ namespace letterman {
 
 	std::string hiveFromSysDir(const std::string& path);
 
-	std::string hiveFromCfgDir(const std::string& path);
+	//std::string hiveFromCfgDir(const std::string& path);
 
 	struct WindowsInstall
 	{

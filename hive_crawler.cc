@@ -140,11 +140,11 @@ namespace letterman {
 
 	inline string hiveFromSysRoot(const string& path)
 	{
-		return hiveFromCfgDir(findFirst(findFirst(path, "System32"), "config"));
+		return hiveFromSysDir(findFirst(path, "System32"));
 	}
 
-	inline string hiveFromCfgDir(const string& path)
+	inline string hiveFromSysDir(const string& path)
 	{
-		return findFirst(path, "SYSTEM", false);
+		return findFirst(findFirst(path, "config"), "SYSTEM", false);
 	}
 }
