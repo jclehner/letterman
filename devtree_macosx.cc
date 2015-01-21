@@ -1,10 +1,20 @@
 #ifdef __APPLE__
 #include <DiskArbitration/DADisk.h>
+#define KERNEL
+#include <IOKit/storage/IOBlockStorageDevice.h>
+#undef KERNEL
 #include <IOKit/storage/IOMedia.h>
 #include <IOKit/IOKitLib.h>
+#include <libkern/OSTypes.h>
 #include <stdexcept>
+#include <iostream>
 #include "exception.h"
 #include "devtree.h"
+
+#ifndef kIOBlockStorageDeviceTypeKey
+#define kIOBlockStorageDeviceTypeKey "device-type"
+#endif
+
 using namespace std;
 
 namespace letterman {
@@ -26,6 +36,11 @@ namespace letterman {
 			throw ErrnoException("CFStringGetCString");
 		}
 
+		string fromStringRef(const void* str, bool release = false)
+		{
+			return fromStringRef(static_cast<CFStringRef>(str), release);
+		}
+
 		static const string kPropIsDisk = fromStringRef(
 				kDADiskDescriptionMediaWholeKey, false);
 
@@ -35,12 +50,16 @@ namespace letterman {
 		const string kPropFsType = fromStringRef(
 				kDADiskDescriptionVolumeKindKey, false);
 
-		string toString(CFTypeRef ref)
+		const string kPropDeviceModelMounted = fromStringRef(
+				kDADiskDescriptionDeviceModelKey, false);
+
+		string toString(CFTypeRef ref, bool releaseIfString = false)
 		{
 			CFTypeID id = CFGetTypeID(ref);
 
 			if (id == CFStringGetTypeID()) {
-				return fromStringRef(static_cast<CFStringRef>(ref), false);
+				return fromStringRef(static_cast<CFStringRef>(ref), 
+						releaseIfString);
 			} else if (id == CFUUIDGetTypeID()) {
 				CFStringRef str = CFUUIDCreateString(
 						kCFAllocatorDefault, 
@@ -79,6 +98,7 @@ namespace letterman {
 	const string DevTree::kPropMountPoint = fromStringRef(
 			kDADiskDescriptionVolumePathKey, false);
 
+	const string DevTree::kPropModel = "kPropModel";
 	const string DevTree::kPropMbrId = DevTree::kNoMatchIfSetAsPropKey;
 	const string DevTree::kPropPartOffsetBlocks = DevTree::kNoMatchIfSetAsPropKey;
 	const string DevTree::kPropPartOffsetBytes = DevTree::kNoMatchIfSetAsPropKey;
@@ -103,11 +123,13 @@ namespace letterman {
 		if (!session) throw ErrnoException("DASessionCreate");
 
 		Properties props;
-		io_service_t service;
+		io_service_t device;
 
-		while ((service = IOIteratorNext(iter))) {
+		// First pass: get mounted device info
+
+		while ((device = IOIteratorNext(iter))) {
 			DADiskRef disk = DADiskCreateFromIOMedia(
-					kCFAllocatorDefault, session, service);
+					kCFAllocatorDefault, session, device);
 
 			CFDictionaryRef dict = DADiskCopyDescription(disk);
 			CFIndex size = CFDictionaryGetCount(dict);
@@ -148,9 +170,68 @@ namespace letterman {
 			props.clear();
 
 			CFRelease(disk);
+			IOObjectRelease(device);
 		}
 
 		CFRelease(session);
+
+		// Second pass: get optical drive device info
+
+		kr = IOServiceGetMatchingServices(
+				kIOMasterPortDefault,
+				IOServiceMatching(kIOBlockStorageDeviceClass),
+				&iter);
+
+		if (kr != KERN_SUCCESS)
+			throw ErrnoException("IOServiceGetMatchingServices");
+
+		while ((device = IOIteratorNext(iter))) {
+			io_string_t path;
+
+			kr = IORegistryEntryGetPath(device, kIOServicePlane, path);
+			if (kr != KERN_SUCCESS) continue;
+
+			CFTypeRef prop = IORegistryEntryCreateCFProperty(
+					device, CFSTR(kIOBlockStorageDeviceTypeKey),
+					kCFAllocatorDefault, 0);
+
+			if (prop) {
+				string deviceType(toString(prop, false));
+				if (deviceType != "DVD" && deviceType != "CD" 
+					&& deviceType != "BD") {
+					continue;
+				}
+			}
+
+			prop = IORegistryEntryCreateCFProperty(
+					device, CFSTR(kIOPropertyDeviceCharacteristicsKey),
+					kCFAllocatorDefault, 0);
+
+			if (!prop) {
+				continue;
+			}
+
+			CFDictionaryRef dict = static_cast<CFDictionaryRef>(prop);
+
+			const void* val = CFDictionaryGetValue(dict, CFSTR(kIOPropertyVendorNameKey));
+			if (!val) {
+				continue;
+			}
+
+
+			string vendor(toString(val));
+
+			val = CFDictionaryGetValue(dict, CFSTR(kIOPropertyProductNameKey));
+			if (!val) {
+				continue;
+			}
+
+			string product(toString(val));
+
+			ret[path][kPropModel] = vendor + product;
+
+			IOObjectRelease(device);
+		}
 
 		return ret;
 	}
