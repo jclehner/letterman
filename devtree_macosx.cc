@@ -1,8 +1,6 @@
 #ifdef __APPLE__
 #include <DiskArbitration/DADisk.h>
-#define KERNEL
 #include <IOKit/storage/IOBlockStorageDevice.h>
-#undef KERNEL
 #include <IOKit/storage/IOMedia.h>
 #include <IOKit/IOKitLib.h>
 #include <libkern/OSTypes.h>
