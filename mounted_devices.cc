@@ -7,6 +7,7 @@
 #include "mounted_devices.h"
 #include "exception.h"
 #include "endian.h"
+#include "util.h"
 using namespace std;
 
 namespace letterman {
@@ -70,6 +71,9 @@ namespace letterman {
 				uint32_t disk = le32toh(*reinterpret_cast<const uint32_t*>(buf));
 				uint64_t offset = le64toh(*reinterpret_cast<const uint64_t*>(buf + 4));
 
+				cout << "------" << endl;
+				util::hexdump(cerr, buf, len, 4) << endl;
+
 				return new MbrPartitionMapping(disk, offset);
 			} else if (len >= 8) {
 				uint64_t magic = *reinterpret_cast<const uint64_t*>(buf);
@@ -109,25 +113,33 @@ namespace letterman {
 		struct Value
 		{
 			Value()
+			: freeKey(true), freeValue(true)
 			{
 				val = { 0 };
 			}
 
 			~Value()
 			{
-				free(val.key);
-				free(val.value);
+				if (freeKey) free(val.key);
+				if (freeValue) free(val.value);
 			}
 
 			hive_set_value* operator->() {
 				return &val;
 			}
 
+			hive_set_value* operator*() {
+				return &val;
+			}
+
 			void setKey(const string& key)
 			{
-				free(val.key);
+				if (freeKey) free(val.key);
 				val.key = strdup(key.c_str());
 			}
+
+			bool freeKey;
+			bool freeValue;
 
 			hive_set_value val;
 		};
@@ -156,6 +168,28 @@ namespace letterman {
 		{
 			if (!getValue(hive, node, MappingName::letter(letter).key(), out)) {
 				throw UserFault(string("Letter is not mapped to any volume: ") + letter + ":");
+			}
+		}
+
+		void requireDriveLetterNotTaken(hive_h* hive, hive_node_h node, char letter)
+		{
+			string key(MappingName::letter(letter).key());
+			hive_value_h handle = hivex_node_get_value(hive, node, key.c_str());
+			if (handle) {
+				hive_type t;
+				size_t len;
+
+				if (hivex_value_type(hive, handle, &t, &len) != 0) {
+					throw ErrnoException("hivex_value_type");
+				}
+
+				if (len != 0) {
+					throw UserFault(string("Drive letter ") 
+							+ letter + ": is already taken");
+				}
+
+				// Zero length means removed (by us) - Windows will boot
+				// happily with a zero-length \\DosMappings\\X: entry.
 			}
 		}
 	}
@@ -263,28 +297,12 @@ namespace letterman {
 
 	void MountedDevices::change(char from, char to)
 	{
+		requireDriveLetterNotTaken(_hive, _node, to);
+
 		Value val;
 		getValue(_hive, _node, from, val);
 
 		string key(MappingName::letter(to).key());
-
-		hive_value_h handle = hivex_node_get_value(_hive, _node, key.c_str());
-		if (handle) {
-			hive_type t;
-			size_t len;
-
-			if (hivex_value_type(_hive, handle, &t, &len) != 0) {
-				throw ErrnoException("hivex_value_type");
-			}
-
-			if (len != 0) {
-				throw UserFault(string("Drive letter ") 
-						+ to + ": is already taken");
-			}
-
-			// Zero length means removed (by us) - Windows will boot
-			// happily with a zero-length \\DosMappings\\X: entry.
-		}
 
 		val.setKey(key);
 
@@ -306,6 +324,26 @@ namespace letterman {
 
 		// hivex does not support deleting values, so just clear it
 		val->len = 0;
+
+		if (hivex_node_set_value(_hive, _node, &val.val, 0) != 0) {
+			throw ErrnoException("hivex_node_set_value");
+		}
+
+		if (hivex_commit(_hive, NULL, 0) != 0) {
+			throw ErrnoException("hivex_commit");
+		}
+	}
+
+	void MountedDevices::add(char letter, const void* data, size_t len)
+	{
+		requireDriveLetterNotTaken(_hive, _node, letter);
+
+		Value val;
+		val->key = strdup(MappingName::letter(letter).key().c_str());
+		val->value = static_cast<char*>(const_cast<void*>(data));
+		val.freeValue = false;
+		val->len = len;
+		val->t = hive_t_REG_BINARY;
 
 		if (hivex_node_set_value(_hive, _node, &val.val, 0) != 0) {
 			throw ErrnoException("hivex_node_set_value");
