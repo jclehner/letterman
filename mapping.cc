@@ -71,55 +71,110 @@ namespace letterman {
 #endif
 		}
 
-		string resolveMbrDiskOrPartition(uint32_t id, uint64_t lbaStart = 0, bool useLbaStart = false)
+		struct MBR
 		{
-			struct MBR
+			struct Partition
 			{
-				struct Partition
-				{
-					uint8_t bootable;
-					char chsFirst[3];
-					uint8_t type;
-					char chsLast[3];
-					uint32_t lbaStart;
-					uint32_t lbaSize;
-				} __attribute__((packed));
-
-				char code[440];
-				uint32_t id;
-				uint16_t zero;
-				Partition partitions[4];
-				uint16_t sig;
+				uint8_t bootable;
+				char chsFirst[3];
+				uint8_t type;
+				char chsLast[3];
+				uint32_t lbaStart;
+				uint32_t lbaSize;
 			} __attribute__((packed));
 
-			static_assert(sizeof(MBR) == 512, "MBR is not 512 bytes");
+			char code[440];
+			uint32_t id;
+			char zero[2];
+			Partition partitions[4];
+			uint16_t sig;
+
+			bool read(istream& in)
+			{
+				if (!in.read(reinterpret_cast<char*>(this), 512)) {
+					return false;
+				}
+
+				if((sig = le16toh(sig)) != 0xaa55) {
+					return false;
+				}
+
+				id = le32toh(id);
+
+				for (unsigned i = 0; i != 4; ++i) {
+					partitions[i].lbaStart = le32toh(partitions[i].lbaStart);
+					partitions[i].lbaSize = le32toh(partitions[i].lbaSize);
+				}
+
+				return true;
+			}
+
+
+		} __attribute__((packed));
+
+		static_assert(sizeof(MBR) == 512, "MBR is not 512 bytes");
+
+		inline bool isEbrEntry(const MBR::Partition& partition) {
+			return partition.type == 0x0f;
+		}
+
+		unsigned resolveExtendedPartition(ifstream& in, uint64_t ebrLbaStart,
+				uint64_t lbaStart, unsigned& counter)
+		{
+			MBR ebr;
+
+			if (!in.seekg(ebrLbaStart * 512) || !ebr.read(in)) {
+				return 0;
+			}
+
+			uint32_t partLbaStart = ebr.partitions[0].lbaStart;
+			uint32_t nextEbrLbaStart = isEbrEntry(ebr.partitions[1]) ?
+				ebr.partitions[1].lbaStart : 0;
+
+			if (partLbaStart == lbaStart) {
+				return counter;
+			} else if (nextEbrLbaStart != 0) {
+				return resolveExtendedPartition(in, nextEbrLbaStart,
+						lbaStart, ++counter);
+			}
+
+			return 0;
+		}
+
+		string resolveMbrDiskOrPartition(uint32_t id, uint64_t lbaStart = 0,
+				bool useLbaStart = false)
+		{
 
 			if (useLbaStart && lbaStart > UINT64_C(0xffffffff)) {
 				return "";
 			}
 
 			for (auto& disk : DevTree::getDisks(Properties())) {
-				ifstream in(disk.first.c_str());
-				if (!in.good()) {
-					continue;
-				}
-
 				MBR mbr;
-
-				if (!in.read(reinterpret_cast<char*>(&mbr), 512)) {
+				ifstream in(disk.first.c_str());
+				if (!in.good() || !mbr.read(in)) {
 					continue;
 				}
 
-				if (le16toh(mbr.sig) != 0xaa55) continue;
-
-				if (le32toh(mbr.id) == id) {
+				if (mbr.id == id) {
 					if (!useLbaStart) return disk.first;
 
-					for (unsigned i = 0; i != 4; ++i) {
-						MBR::Partition* part = mbr.partitions + i;
+					unsigned counter = 5;
 
-						if (le32toh(part->lbaStart) == lbaStart) {
+					for (unsigned i = 0; i != 4; ++i) {
+						if (!mbr.partitions[i].type) continue;
+
+						uint32_t partLbaStart = mbr.partitions[i].lbaStart;
+
+						if (partLbaStart == lbaStart) {
 							return getPartitionName(disk.first, i + 1);
+						} else if (isEbrEntry(mbr.partitions[i])) {
+							unsigned partition = resolveExtendedPartition(in, partLbaStart,
+									lbaStart, counter);
+
+							if (partition) {
+								return getPartitionName(disk.first, partition);
+							}
 						}
 					}
 				}
