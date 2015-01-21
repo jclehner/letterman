@@ -34,11 +34,6 @@ namespace letterman {
 			throw ErrnoException("CFStringGetCString");
 		}
 
-		string fromStringRef(const void* str, bool release = false)
-		{
-			return fromStringRef(static_cast<CFStringRef>(str), release);
-		}
-
 		static const string kPropIsDisk = fromStringRef(
 				kDADiskDescriptionMediaWholeKey, false);
 

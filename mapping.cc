@@ -15,17 +15,6 @@ namespace letterman {
 
 	namespace {
 
-		string readlink(const string& path)
-		{
-			char buf[1024];
-			ssize_t len = ::readlink(path.c_str(), buf, sizeof(buf) - 1);
-			if (len == -1) {
-				throw ErrnoException("readlink");
-			}
-
-			return string(buf, len);
-		}
-
 		static const char* GUID_DEVINTERFACE_CDCHANGER =
 			"53F56312-B6BF-11D0-94F2-00A0C91EFB8B";
 
