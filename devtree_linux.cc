@@ -17,7 +17,8 @@ namespace letterman {
 			"DEVNAME", "ID_PART_ENTRY_OFFSET", "ID_PART_ENTRY_NUMBER", "ID_FS_LABEL",
 			"ID_FS_LABEL_ENC", "UDISKS_PARTITION_NUMBER", "UDISKS_PARTITION_OFFSET",
 			"ID_DRIVE_FLOPPY", "MAJOR", "MINOR", "ID_SERIAL", "ID_SERIAL_SHORT",
-			"ID_PART_ENTRY_DISK", "DEVTYPE", "ID_PART_TABLE_UUID", "ID_PART_ENTRY_UUID"
+			"ID_PART_ENTRY_DISK", "DEVTYPE", "ID_PART_TABLE_UUID", "ID_PART_ENTRY_UUID",
+			"ID_FS_TYPE"
 		};
 
 		template<typename T> using UdevUniquePtr = unique_ptr<T, std::function<void(T*)>>;
@@ -78,6 +79,7 @@ namespace letterman {
 					props[kPropDiskId] = props["MAJOR"] + ":" + props["MINOR"];
 				} else if (isPartition(props)) {
 					props[kPropDiskId] = props["ID_PART_ENTRY_DISK"];
+					props[kPropIsNtfs] = (props["ID_FS_TYPE"] == "ntfs" ? "1" : "0");
 				} else {
 					continue;
 				}

@@ -6,13 +6,14 @@ namespace letterman {
 
 	// The first char is NUL, so we don't have collisions with
 	// any property values (which are all human readable).
-	const string DevTree::kIgnoreValue("\0kIgnoreValue", 2);
-	const string DevTree::kAnyValue("\0kAnyValue", 2);
-	const string DevTree::kNoValue("\0kNoValue", 2);
+	const string DevTree::kIgnoreValue("\01", 2);
+	const string DevTree::kAnyValue("\02", 2);
+	const string DevTree::kNoValue("\03", 2);
 
-	const string DevTree::kNoMatchIfSetAsPropKey("\0kNoMatchIfSetAsPropKey", 2);
+	const string DevTree::kNoMatchIfSetAsPropKey("\04", 2);
 
 	const string DevTree::kPropDiskId = "kPropDiskId";
+	const string DevTree::kPropIsNtfs = "kPropIsNtfs";
 
 	bool DevTree::arePropsMatching(
 			const Properties& all, const Properties& criteria)

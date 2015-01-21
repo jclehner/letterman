@@ -32,6 +32,9 @@ namespace letterman {
 		static const string kPropBsdUnit = fromStringRef(
 				kDADiskDescriptionMediaBSDUnitKey);
 
+		const string kPropFsType = fromStringRef(
+				kDADiskDescriptionVolumeKindKey, false);
+
 		string toString(CFTypeRef ref)
 		{
 			CFTypeID id = CFGetTypeID(ref);
@@ -126,12 +129,16 @@ namespace letterman {
 
 			if (!props.empty()) {
 				props[kPropDiskId] = props[kPropMajor] + ":" + props[kPropBsdUnit];
+
+				if (isPartition(props)) {
+					props[kPropIsNtfs] = (props[kPropFsType] == "ntfs" ? "1" : "0");
+				}
+
 				ret[props[kPropDevice]] = props;
 			}
 
 			props.clear();
 
-			//CFRelease(dict);
 			CFRelease(disk);
 		}
 

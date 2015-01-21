@@ -23,6 +23,7 @@ namespace letterman {
 		static const std::string kPropPartOffsetBytes;
 
 		static const std::string kPropDiskId;
+		static const std::string kPropIsNtfs;
 
 		static const std::string kIgnoreValue;
 		static const std::string kAnyValue;
