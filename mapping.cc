@@ -7,6 +7,7 @@
 #include "exception.h"
 #include "devtree.h"
 #include "mapping.h"
+#include "endian.h"
 #include "util.h"
 using namespace std;
 
@@ -241,7 +242,6 @@ namespace letterman {
 	string GuidPartitionMapping::osDeviceName() const
 	{
 		string guid(_guid);
-		transform(guid.begin(), guid.end(), guid.begin(), ::tolower);
 
 		Properties criteria = {{ DevTree::kPropPartUuid, guid }};
 		map<string, Properties> result(DevTree::getPartitions(criteria));
