@@ -28,7 +28,11 @@ namespace letterman {
 
 				ret._target = tmpl.get();
 
+#ifdef __linux__
 				if (mount(path.c_str(), ret._target.c_str(), "ntfs", 0, NULL)) {
+#else
+				if (mount(path.c_str(), ret._target.c_str(), "ntfs", 0)) {
+#endif
 					throw ErrnoException("mount: " + path);
 				}
 
@@ -40,7 +44,11 @@ namespace letterman {
 			~ScopedMount()
 			{
 				if (!_target.empty()) {
+#ifdef __linux__
 					umount2(_target.c_str(), MNT_DETACH);
+#else
+					umount(_target.c_str());
+#endif
 					rmdir(_target.c_str());
 				}
 			}
