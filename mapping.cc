@@ -14,7 +14,6 @@ using namespace std;
 namespace letterman {
 
 	namespace {
-
 		static const char* GUID_DEVINTERFACE_CDCHANGER =
 			"53F56312-B6BF-11D0-94F2-00A0C91EFB8B";
 
@@ -63,30 +62,66 @@ namespace letterman {
 			return guid;
 		}
 
-		string findDiskWithMbrId(uint32_t id)
+		inline string getPartitionName(const string& disk, unsigned partition)
 		{
+#ifdef __APPLE__
+			return disk + "s" + util::toString(partition);
+#else
+			return disk + util::toString(partition);
+#endif
+		}
+
+		string resolveMbrDiskOrPartition(uint32_t id, uint64_t lbaStart = 0, bool useLbaStart = false)
+		{
+			struct MBR
+			{
+				struct Partition
+				{
+					uint8_t bootable;
+					char chsFirst[3];
+					uint8_t type;
+					char chsLast[3];
+					uint32_t lbaStart;
+					uint32_t lbaSize;
+				} __attribute__((packed));
+
+				char code[440];
+				uint32_t id;
+				uint16_t zero;
+				Partition partitions[4];
+				uint16_t sig;
+			} __attribute__((packed));
+
+			static_assert(sizeof(MBR) == 512, "MBR is not 512 bytes");
+
+			if (useLbaStart && lbaStart > UINT64_C(0xffffffff)) {
+				return "";
+			}
+
 			for (auto& disk : DevTree::getDisks(Properties())) {
-				ifstream mbr(disk.first.c_str());
-				if (!mbr.good() || !mbr.seekg(510)) {
+				ifstream in(disk.first.c_str());
+				if (!in.good()) {
 					continue;
 				}
 
-				uint16_t mbrSig;
-				if (!mbr.read(reinterpret_cast<char*>(&mbrSig), 2)) {
+				MBR mbr;
+
+				if (!in.read(reinterpret_cast<char*>(&mbr), 512)) {
 					continue;
 				}
 
-				if (le16toh(mbrSig) != 0xaa55 || !mbr.seekg(440)) {
-					continue;
-				}
+				if (le16toh(mbr.sig) != 0xaa55) continue;
 
-				uint32_t mbrId;
-				if(!mbr.read(reinterpret_cast<char*>(&mbrId), 4)) {
-					continue;
-				}
+				if (le32toh(mbr.id) == id) {
+					if (!useLbaStart) return disk.first;
 
-				if(le32toh(mbrId) == id) {
-					return disk.first;
+					for (unsigned i = 0; i != 4; ++i) {
+						MBR::Partition* part = mbr.partitions + i;
+
+						if (le32toh(part->lbaStart) == lbaStart) {
+							return getPartitionName(disk.first, i + 1);
+						}
+					}
 				}
 			}
 
@@ -166,7 +201,13 @@ namespace letterman {
 		map<string, Properties> result(DevTree::getDisks(criteria));
 
 		if (result.empty()) {
-			disk = findDiskWithMbrId(_disk);
+#ifdef __APPLE__
+			if (_offset % 512 == 0) {
+				disk = resolveMbrDiskOrPartition(_disk, _offset / 512, true);
+			}
+#else
+			disk = resolveMbrDiskOrPartition(_disk);
+#endif
 		} else {
 			// TODO handle the not-so-fringe case where getDisks() returns
 			// more than one result
@@ -176,6 +217,11 @@ namespace letterman {
 		if (disk.empty()) {
 			return kOsNameUnknown;
 		} 
+#ifdef __APPLE__
+		else {
+			return disk;
+		}
+#endif
 		
 		// We have a disk name, but no partition yet. Do the lookup 
 		// again, this time explicitly specifying the disk and
