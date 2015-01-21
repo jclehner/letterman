@@ -81,12 +81,17 @@ namespace letterman {
 		string findDiskWithMbrId(uint32_t id)
 		{
 			for (auto& disk : DevTree::getDisks(Properties())) {
-#ifdef __linux__
-				if (!disk.second["ID_DRIVE_FLOPPY"].empty()) continue;
-#endif
-
 				ifstream mbr(disk.first.c_str());
-				if (!mbr.good() || !mbr.seekg(440)) {
+				if (!mbr.good() || !mbr.seekg(510)) {
+					continue;
+				}
+
+				uint16_t mbrSig;
+				if (!mbr.read(reinterpret_cast<char*>(&mbrSig), 2)) {
+					continue;
+				}
+
+				if (le16toh(mbrSig) != 0xaa55 || !mbr.seekg(440)) {
 					continue;
 				}
 
