@@ -1,8 +1,10 @@
 #ifndef LETTERMAN_UTIL_H
 #define LETTERMAN_UTIL_H
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <cctype>
 
 namespace letterman {
 	namespace util {
@@ -24,6 +26,10 @@ namespace letterman {
 
 			throw std::invalid_argument(std::string("Failed to convert to ") 
 					+ typeid(T).name() + ": " + str);
+		}
+
+		inline void capitalize(std::string& str) {
+			std::transform(str.begin(), str.end(), str.begin(), ::toupper);
 		}
 	}
 }

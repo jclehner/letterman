@@ -15,10 +15,6 @@ namespace letterman {
 
 	namespace {
 
-		void capitalize(string& str) {
-			transform(str.begin(), str.end(), str.begin(), ::toupper);
-		}
-
 		string readlink(const string& path)
 		{
 			char buf[1024];
@@ -62,7 +58,7 @@ namespace letterman {
 
 		string devInterfaceGuidToName(string guid)
 		{
-			capitalize(guid);
+			util::capitalize(guid);
 
 			if (guid == GUID_DEVINTERFACE_CDCHANGER) return "CD Changer";
 			if (guid == GUID_DEVINTERFACE_CDROM) return "CD-ROM";
@@ -116,7 +112,7 @@ namespace letterman {
 	MappingName::MappingName(char letter, const string& guid)
 	: _letter(letter), _guid(guid)
 	{
-		capitalize(_guid);
+		util::capitalize(_guid);
 	}
 
 	std::string MappingName::key() const

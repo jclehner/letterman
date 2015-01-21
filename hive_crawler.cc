@@ -1,0 +1,135 @@
+#include <sys/mount.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <memory>
+#include "hive_crawler.h"
+#include "exception.h"
+#include "devtree.h"
+#include "util.h"
+using namespace std;
+
+namespace letterman {
+	namespace {
+		struct ScopedMount
+		{
+			static ScopedMount create(const string& path)
+			{
+				ScopedMount ret;
+
+				unique_ptr<char[]> tmpl(new char[32]);
+				strcpy(tmpl.get(), "/tmp/lettermanXXXXXX");
+
+				if (!mkdtemp(tmpl.get())) {
+					throw ErrnoException("mkdtemp");
+				}
+
+				ret._target = tmpl.get();
+
+				if (mount(path.c_str(), ret._target.c_str(), "ntfs", 0, NULL)) {
+					throw ErrnoException("mount: " + path);
+				}
+
+				ret._path = path;
+
+				return ret;
+			}
+
+			~ScopedMount()
+			{
+				if (!_target.empty()) {
+					umount2(_target.c_str(), MNT_DETACH);
+					rmdir(_target.c_str());
+				}
+			}
+
+			const string& target() const 
+			{ return _target; }
+
+			private:
+			string _path;
+			string _target;
+		};
+
+		string findFirst(const string& path, string name, bool findDir = true)
+		{
+			DIR* dir = opendir(path.c_str());
+			if (!dir) throw ErrnoException("opendir: " + path);
+
+			util::capitalize(name);
+
+			struct dirent d, *result;
+
+			do
+			{
+				if (readdir_r(dir, &d, &result) != 0) {
+					throw ErrnoException("readdir_r");
+				}
+
+				if (result) {
+					string leaf(d.d_name);
+					util::capitalize(leaf);
+
+					if (leaf == name) {
+						if (d.d_type == DT_UNKNOWN 
+							|| d.d_type == (findDir ? DT_DIR : DT_REG)) {
+							return path + "/" + d.d_name;
+						}
+					}
+				}
+
+
+			} while(result);
+
+			throw UserFault(string("No such ") + (findDir ? "directory" : "file") + 
+					" in " + path + ": " + name);
+		}
+	}
+
+	set<string> getAllSysDrives()
+	{
+		set<string> ret;
+		Properties props = {{ DevTree::kPropIsNtfs, "1" }};
+
+		for (auto& e : DevTree::getPartitions(props)) {
+			try {
+				ret.insert(hiveFromSysDrive(e.first));
+			} catch (const UserFault& e) {
+				// ignore
+			}
+		}
+
+		return ret;
+	}
+
+	string hiveFromSysDrive(const string& path)
+	{
+		struct stat st;
+
+		if (stat(path.c_str(), &st) == -1) {
+			if (errno != ENOENT) throw ErrnoException("stat");
+			throw UserFault("Path does not exist: " + path);	
+		}
+
+		if (S_ISBLK(st.st_mode)) {
+			if (geteuid() != 0) throw UserFault("Operation requires root");
+			auto m(ScopedMount::create(path));
+			return hiveFromSysDrive(m.target());
+		} else if(!S_ISDIR(st.st_mode)) {
+			throw UserFault("Not a device or directory: " + path);
+		}
+
+		return hiveFromSysRoot(findFirst(path, "Windows"));
+	}
+
+	inline string hiveFromSysRoot(const string& path)
+	{
+		return hiveFromCfgDir(findFirst(findFirst(path, "System32"), "config"));
+	}
+
+	inline string hiveFromCfgDir(const string& path)
+	{
+		return findFirst(path, "SYSTEM", false);
+	}
+}
