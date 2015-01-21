@@ -17,6 +17,7 @@ namespace letterman {
 		static const std::string kPropMajor;
 		static const std::string kPropMinor;
 		static const std::string kPropPartUuid;
+		static const std::string kPropModel;
 
 		static const std::string kPropMountPoint;
 		static const std::string kPropMbrId;
@@ -31,11 +32,11 @@ namespace letterman {
 		static const std::string kNoValue;
 
 		static std::map<std::string, Properties> getDisks(
-				const Properties& criteria)
+				const Properties& criteria = Properties())
 		{ return getDisksOrPartitions(criteria, true); }
 
 		static std::map<std::string, Properties> getPartitions(
-				const Properties& criteria)
+				const Properties& criteria = Properties())
 		{ return getDisksOrPartitions(criteria, false); }
 
 		private:

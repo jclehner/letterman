@@ -19,7 +19,7 @@ namespace letterman {
 			"ID_FS_LABEL_ENC", "UDISKS_PARTITION_NUMBER", "UDISKS_PARTITION_OFFSET",
 			"ID_DRIVE_FLOPPY", "MAJOR", "MINOR", "ID_SERIAL", "ID_SERIAL_SHORT",
 			"ID_PART_ENTRY_DISK", "DEVTYPE", "ID_PART_TABLE_UUID", "ID_PART_ENTRY_UUID",
-			"ID_FS_TYPE"
+			"ID_FS_TYPE", "ID_MODEL"
 		};
 
 		template<typename T> using UdevUniquePtr = unique_ptr<T, std::function<void(T*)>>;
@@ -51,6 +51,7 @@ namespace letterman {
 	const string DevTree::kPropMinor = "MINOR";
 	const string DevTree::kPropFsLabel = "ID_FS_LABEL";
 	const string DevTree::kPropPartUuid = "ID_PART_ENTRY_UUID";
+	const string DevTree::kPropModel = "ID_MODEL";
 
 	const string DevTree::kPropMountPoint = "kPropMountPoint";
 	const string DevTree::kPropMbrId = "ID_PART_TABLE_UUID";

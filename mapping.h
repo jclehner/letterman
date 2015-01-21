@@ -124,6 +124,7 @@ namespace letterman {
 		virtual ~GenericMapping() {}
 
 		virtual std::string toString(int padding) const override;
+		virtual std::string osDeviceName() const override;
 
 		private:
 		std::string _path;

@@ -268,4 +268,86 @@ namespace letterman {
 		ostr << devInterfaceGuidToName(_guid) << " " << _path;
 		return ostr.str();
 	}
+
+	string GenericMapping::osDeviceName() const
+	{
+		// FIXME this does not work on OSX, as the data
+		// obtained from DiskArbitration don't include the
+		// optical drive if it contains no medium.
+
+		string path(_path);
+
+		string::size_type pos = path.find("SCSI\\CdRom");
+		if (pos == 0) {
+			pos = path.find("&Prod_");
+			if (pos == string::npos) return kOsNameUnknown;
+
+			// SCSI optical drives are stored as
+			// SCSI\CdRom&Ven_<vendor>&Prod_<model>\,
+			// whereas udev seems to use <vendor><mode>
+			// in ID_MODEL.
+
+			// Remove &Prod_
+			path.erase(pos, 6);
+
+			pos = path.find("&Ven_");
+			if (pos == string::npos || pos + 5 >= path.size()) {
+				return kOsNameUnknown;
+			}
+
+			pos += 5;
+
+			string::size_type begin = pos;
+
+			pos = path.find_first_of("\\&", begin);
+			if (pos == string::npos) return kOsNameUnknown;
+
+			string model(path.substr(begin, pos - begin));
+			Properties criteria = {{ DevTree::kPropModel, model }};
+
+			map<string, Properties> results(DevTree::getDisks(criteria));
+			if (results.empty()) {
+				return kOsNameNotAttached;
+			} else if (results.size() == 1) {
+				return results.begin()->first;
+			}
+		}
+
+		if ((pos = path.find("IDE\\CdRom")) == 0) {
+			// IDE optical drives are stored as
+			// IDE\CdRom<vendor>_<model>_<other info>
+
+			// Skip the prefix
+			pos += 9;
+
+			if (pos >= path.size()) return kOsNameUnknown;
+
+			string::size_type begin = pos;
+
+			if ((pos = path.find('_', pos)) == string::npos) {
+				return kOsNameUnknown;
+			}
+
+			// Remove the first underscore. Note that this will not
+			// work if the vendor string contains an underscore!
+
+			path.erase(pos);
+
+			string ret;
+
+			for (auto& disk : DevTree::getDisks()) {
+				if (path.find(disk.second[DevTree::kPropModel]) == begin) {
+					if (!ret.empty()) {
+						// We have more than one match!
+						return kOsNameUnknown;
+					}
+					ret = disk.first;
+				}
+			}
+
+			return ret.empty() ? kOsNameNotAttached : ret;
+		}
+
+		return kOsNameUnknown;
+	}
 }
