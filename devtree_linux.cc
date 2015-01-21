@@ -22,7 +22,6 @@ namespace letterman {
 			"ID_FS_TYPE", "ID_MODEL"
 		};
 
-		template<typename T> using UdevUniquePtr = unique_ptr<T, std::function<void(T*)>>;
 
 		void capitalize(string& str)
 		{
@@ -63,12 +62,14 @@ namespace letterman {
 		static map<string, Properties> entries;
 		if (!entries.empty()) return entries;
 
-		UdevUniquePtr<udev> udev(udev_new(), [] (struct udev* p) { udev_unref(p); });
+		util::UniquePtrWithDeleter<udev> udev(udev_new(),
+				[] (struct udev* p) { udev_unref(p); });
 		if (!udev) {
 			throw ErrnoException("udev_new");
 		}
 
-		UdevUniquePtr<udev_enumerate> enumerate(udev_enumerate_new(udev.get()), 
+		util::UniquePtrWithDeleter<udev_enumerate> enumerate(
+				udev_enumerate_new(udev.get()),
 				[] (udev_enumerate* p) { udev_enumerate_unref(p); });
 
 		udev_enumerate_add_match_subsystem(enumerate.get(), "block");
@@ -81,7 +82,8 @@ namespace letterman {
 		udev_list_entry_foreach(dev_list_entry, devices) {
 
 			const char* path = udev_list_entry_get_name(dev_list_entry);
-			UdevUniquePtr<udev_device> dev(udev_device_new_from_syspath(udev.get(), path),
+			util::UniquePtrWithDeleter<udev_device> dev(
+					udev_device_new_from_syspath(udev.get(), path),
 					[] (udev_device* p) { udev_device_unref(p); });
 
 			Properties props;
