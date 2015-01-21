@@ -6,6 +6,14 @@
 
 namespace letterman {
 
+	std::string hiveFromSysDrive(const std::string& path);
+
+	std::string hiveFromSysRoot(const std::string& path);
+
+	std::string hiveFromSysDir(const std::string& path);
+
+	std::string hiveFromCfgDir(const std::string& path);
+
 	struct WindowsInstall
 	{
 		std::string path;
@@ -16,21 +24,12 @@ namespace letterman {
 
 		friend std::ostream& operator<<(std::ostream& os, const WindowsInstall& wi)
 		{
-			os << (wi.isDevice ? "--sysdrive" : "--sysroot") <<
-				" '" << wi.path << "'";
+			os << "--sysdrive '" << wi.path << "'";
 			return os;
 		}
 	};
 
-	std::set<WindowsInstall> getAllSysDrives();
-
-	std::string hiveFromSysDrive(const std::string& path);
-
-	std::string hiveFromSysRoot(const std::string& path);
-
-	std::string hiveFromSysDir(const std::string& path);
-
-	std::string hiveFromCfgDir(const std::string& path);
+	std::set<WindowsInstall> getAllWindowsInstalls();
 }
 
 #endif

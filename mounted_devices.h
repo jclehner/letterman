@@ -11,7 +11,7 @@ namespace letterman {
 class MountedDevices
 {
 	public:
-	MountedDevices(const char* filename, bool writable = false);
+	MountedDevices(const std::string& filename, bool writable = false);
 	~MountedDevices();
 
 	static const int LIST_WITHOUT_LETTER = 1;

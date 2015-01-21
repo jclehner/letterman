@@ -90,7 +90,7 @@ namespace letterman {
 
 	}
 
-	set<WindowsInstall> getAllSysDrives()
+	set<WindowsInstall> getAllWindowsInstalls()
 	{
 		set<WindowsInstall> ret;
 		Properties props = {{ DevTree::kPropIsNtfs, "1" }};

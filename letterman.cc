@@ -2,6 +2,7 @@
 #include <sstream>
 #include <string>
 #include "mounted_devices.h"
+#include "hive_crawler.h"
 #include "exception.h"
 using namespace std;
 using namespace letterman;
@@ -27,7 +28,7 @@ namespace {
 
 	void requireArgCount(int argc, int n)
 	{
-		if (argc - 3 != n) {
+		if (argc - 2 != n) {
 			ostringstream ostr;
 			ostr << "Action requires " << n << " argument";
 			ostr << (n == 1 ? "" : "s");
@@ -39,16 +40,29 @@ namespace {
 
 int main(int argc, char **argv)
 {
-	if (argc < 3) {
-		cerr << "usage: letterman [hive] [action] [arguments ...]" << endl;
+	if (argc < 2) {
+		cerr << "usage: letterman [action] [arguments ...]" << endl;
 		cerr << "actions: list, swap, change, remove" << endl;
 		return 1;
 	}
 
-	string hive(argv[1]);
-	string action(argv[2]);
-	string arg1(argc >= 4 ? argv[3] : "");
-	string arg2(argc >= 5 ? argv[4] : "");
+	set<WindowsInstall> installs(getAllWindowsInstalls());
+	if (installs.empty()) {
+		cerr << "No Windows installations found. Specify manually with" << endl;
+		cerr << "--sysdrive, --sysroot" << endl;
+		return 1;
+	} else if (installs.size() > 1) {
+		cerr << "Multiple windows installations found. Specify manually with" << endl;
+		for (auto& install : installs) {
+			cerr << "  " << install << endl;
+		}
+		return 1;
+	}
+
+	string hive(hiveFromSysDrive(installs.begin()->path));
+	string action(argv[1]);
+	string arg1(argc >= 3 ? argv[2] : "");
+	string arg2(argc >= 4 ? argv[3] : "");
 
 	try {
 		if (action == "swap" || action == "change") {
@@ -59,7 +73,7 @@ int main(int argc, char **argv)
 			char a = arg1[0];
 			char b = arg2[0];
 
-			MountedDevices md(argv[1], true);
+			MountedDevices md(hive, true);
 
 			if (action == "swap") {
 				md.swap(a, b);
@@ -70,10 +84,10 @@ int main(int argc, char **argv)
 			requireArgCount(argc, 1);
 			requireDriveLetter(arg1);
 
-			MountedDevices (argv[1], true).remove(arg1[0]);
+			MountedDevices (hive, true).remove(arg1[0]);
 		} else if (action == "list") {
 
-			for (auto&& mapping : MountedDevices(argv[1]).list()) {
+			for (auto&& mapping : MountedDevices(hive).list()) {
 				string device(mapping->osDeviceName());
 
 				cout << mapping->name() << "  ";
