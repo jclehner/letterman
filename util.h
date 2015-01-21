@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <memory>
 #include <string>
 #include <cctype>
 
@@ -31,6 +32,9 @@ namespace letterman {
 		inline void capitalize(std::string& str) {
 			std::transform(str.begin(), str.end(), str.begin(), ::toupper);
 		}
+
+		template<typename T> using UniquePtrWithDeleter = 
+			std::unique_ptr<T, std::function<void(T*)>>;
 	}
 }
 #endif

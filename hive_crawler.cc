@@ -13,6 +13,9 @@ using namespace std;
 
 namespace letterman {
 	namespace {
+#ifdef __APPLE__
+#endif
+
 		struct ScopedMount
 		{
 			static ScopedMount create(const string& path)
@@ -28,7 +31,29 @@ namespace letterman {
 
 				ret._target = tmpl.get();
 
+#ifdef __APPLE__
+				struct NtfsMountOpts
+				{
+					const char* device;
+					uint8_t majorVer;
+					uint8_t minorVer;
+				} __attribute__((packed));
+
+				util::UniquePtrWithDeleter<NtfsMountOpts> opts(
+						valloc(sizeof(NtfsMountOpts)),
+						[] (void* p) { free(p); });
+
+				if (opts) throw ErrnoException("valloc");
+
+				*opts = {
+					.device = path.c_str(),
+					.majorVer = 0,
+					.minorVer = 0 };
+
+				if (mount("ntfs", ret._target.c_str(), 0, opts.get())) {
+#else
 				if (mount(path.c_str(), ret._target.c_str(), "ntfs", 0, NULL)) {
+#endif
 					throw ErrnoException("mount: " + path);
 				}
 
@@ -40,7 +65,11 @@ namespace letterman {
 			~ScopedMount()
 			{
 				if (!_target.empty()) {
+#ifdef __linux__
 					umount2(_target.c_str(), MNT_DETACH);
+#else
+					unmount(_target.c_str(), 0);
+#endif
 					rmdir(_target.c_str());
 				}
 			}
