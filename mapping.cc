@@ -115,11 +115,19 @@ namespace letterman {
 		static_assert(sizeof(MBR) == 512, "MBR is not 512 bytes");
 
 		inline bool isEbrEntry(const MBR::Partition& partition) {
-			return partition.type == 0x0f;
+			switch (partition.type) {
+				case 0x05: // CHS extended, but (ab)used as LBA
+				case 0x0f: // LBA extended
+				case 0x85: // Linux extended
+					return true;
+
+				default:
+					return false;
+			}
 		}
 
-		unsigned resolveExtendedPartition(ifstream& in, uint64_t ebrLbaStart,
-				uint64_t lbaStart, unsigned& counter)
+		unsigned resolveExtendedPartition(ifstream& in, const uint64_t extLbaStart, 
+				uint64_t ebrLbaStart, const uint64_t lbaStart, unsigned& counter)
 		{
 			MBR ebr;
 
@@ -127,18 +135,26 @@ namespace letterman {
 				return 0;
 			}
 
-			uint32_t partLbaStart = ebr.partitions[0].lbaStart;
-			uint32_t nextEbrLbaStart = isEbrEntry(ebr.partitions[1]) ?
-				ebr.partitions[1].lbaStart : 0;
+			uint64_t logPartLbaStart = 
+				ebrLbaStart + ebr.partitions[0].lbaStart;
 
-			if (partLbaStart == lbaStart) {
+			ebrLbaStart = extLbaStart + ebr.partitions[1].lbaStart;
+
+			if (logPartLbaStart == lbaStart) {
 				return counter;
-			} else if (nextEbrLbaStart != 0) {
-				return resolveExtendedPartition(in, nextEbrLbaStart,
+			} else if (ebrLbaStart != extLbaStart) {
+				return resolveExtendedPartition(in, extLbaStart, ebrLbaStart,
 						lbaStart, ++counter);
 			}
 
 			return 0;
+		}
+
+		unsigned resolveExtendedPartition(ifstream& in, uint64_t extLbaStart, 
+				uint64_t lbaStart, unsigned& counter)
+		{
+			return resolveExtendedPartition(in, extLbaStart, extLbaStart, 
+					lbaStart, counter);
 		}
 
 		string resolveMbrDiskOrPartition(uint32_t id, uint64_t lbaStart = 0,
@@ -255,10 +271,12 @@ namespace letterman {
 		string disk;
 		map<string, Properties> result(DevTree::getDisks(criteria));
 
+#define __APPLE__
+
 		if (result.empty()) {
 #ifdef __APPLE__
 			if (_offset % 512 == 0) {
-				disk = resolveMbrDiskOrPartition(_disk, _offset / 512, true);
+				disk = resolveMbrDiskOrPartition(_disk, _offset, true);
 			}
 #else
 			disk = resolveMbrDiskOrPartition(_disk);

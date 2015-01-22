@@ -4,6 +4,7 @@
 #include "mounted_devices.h"
 #include "hive_crawler.h"
 #include "exception.h"
+#include "util.h"
 using namespace std;
 using namespace letterman;
 
@@ -116,6 +117,7 @@ int main(int argc, char **argv)
 	string action(argv[i]);
 	string arg1(argc >= 2 ? argv[i + 1] : "");
 	string arg2(argc >= 3 ? argv[i + 2] : "");
+	string arg3(argc >= 4 ? argv[i + 3] : "");
 
 	try {
 		if (action == "swap" || action == "change") {
@@ -155,6 +157,25 @@ int main(int argc, char **argv)
 
 				cout << endl;
 			}
+#if 1
+		} else if (action == "addmbr") {
+			requireArgCount(argc, 3);
+			requireDriveLetter(arg1);
+
+			struct Entry
+			{
+				uint32_t disk;
+				uint64_t offset;
+			} __attribute__((packed));
+
+			Entry e;
+			e.disk = htole32(util::fromString<uint32_t>(arg2, ios::hex));
+			e.offset = htole64(util::fromString<uint64_t>(arg3));
+
+			util::hexdump(cout, &e, 12, 4) << endl;
+
+			MountedDevices(hive, true).add(arg1[0], &e, 12);
+#endif
 		} else {
 			cerr << action << ": unknown action" << endl;
 			return 1;

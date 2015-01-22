@@ -1,6 +1,7 @@
 #ifndef LETTERMAN_UTIL_H
 #define LETTERMAN_UTIL_H
 #include <algorithm>
+#include <stdexcept>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -28,8 +29,7 @@ namespace letterman {
 				return t;
 			}
 
-			throw std::invalid_argument(std::string("Failed to convert to ") 
-					+ typeid(T).name() + ": " + str);
+			throw std::invalid_argument("Failed to convert " + str);
 		}
 
 		inline void capitalize(std::string& str)

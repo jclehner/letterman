@@ -70,10 +70,6 @@ namespace letterman {
 			if (len == 12) {
 				uint32_t disk = le32toh(*reinterpret_cast<const uint32_t*>(buf));
 				uint64_t offset = le64toh(*reinterpret_cast<const uint64_t*>(buf + 4));
-
-				cout << "------" << endl;
-				util::hexdump(cerr, buf, len, 4) << endl;
-
 				return new MbrPartitionMapping(disk, offset);
 			} else if (len >= 8) {
 				uint64_t magic = *reinterpret_cast<const uint64_t*>(buf);

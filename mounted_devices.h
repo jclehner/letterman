@@ -25,7 +25,7 @@ class MountedDevices
 	void disable(char letter);
 	void enable(char letter);
 
-	void add(char a, const std::string& data);
+	void add(char a, const void* data, size_t len);
 
 	private:
 	hive_h *_hive;
