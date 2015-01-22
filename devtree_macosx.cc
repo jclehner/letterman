@@ -8,6 +8,7 @@
 #include <iostream>
 #include "exception.h"
 #include "devtree.h"
+#include "util.h"
 
 #ifndef kIOBlockStorageDeviceTypeKey
 #define kIOBlockStorageDeviceTypeKey "device-type"
@@ -199,9 +200,9 @@ namespace letterman {
 			if (prop) {
 				string deviceType(toString(prop, false));
 				if (deviceType == "DVD" || deviceType == "BD") {
-					fakeDev = "(dvd" << dvd++ << ")";
+					fakeDev = "(dvd" + util::toString(dvd++) + ")";
 				} else if (deviceType == "CD") {
-					fakeDev = "(cdrom" << cd++ << ")";
+					fakeDev = "(cdrom" + util::toString(cd++) + ")";
 				} else {
 					continue;
 				}
