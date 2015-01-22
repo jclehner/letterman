@@ -4,6 +4,7 @@
 #include "mounted_devices.h"
 #include "hive_crawler.h"
 #include "exception.h"
+#include "devtree.h"
 #include "endian.h"
 #include "util.h"
 using namespace std;
@@ -36,7 +37,7 @@ namespace {
 		if (argc - 1 != n) {
 			ostringstream ostr;
 			ostr << "Action requires " << n << " argument";
-			ostr << (n == 1 ? "" : "s") << ", got " << n << endl;
+			ostr << (n == 1 ? "" : "s") << ", got " << (n - 1);
 			throw UserFault(ostr.str());
 		}
 	}
@@ -176,6 +177,17 @@ int main(int argc, char **argv)
 			util::hexdump(cout, &e, 12, 4) << endl;
 
 			MountedDevices(hive, true).add(arg1[0], &e, 12);
+		} else if (action == "dump") {
+			requireArgCount(argc, 1);
+
+			map<string, Properties> data;
+
+			if (arg1 == "partitions") data = DevTree::getPartitions();
+			else if (arg1 == "disks") data = DevTree::getDisks();
+
+			for (auto& e : data) {
+				cout << e.first << endl;
+			}
 #endif
 		} else {
 			cerr << action << ": unknown action" << endl;
