@@ -221,7 +221,11 @@ namespace letterman {
 
 			string product(toString(val));
 
-			ret[path][kPropModel] = vendor + product;
+			// Unlike Linux, Mac OS X does not provide a device file for
+			// optical disk drives, and the IO Registry path is a
+			// prohibitively long string, so we just use a human readable
+			// string as the key for our 'ret' map.
+			ret[vendor + " " + product][kPropModel] = vendor + product;
 
 			IOObjectRelease(device);
 		}
