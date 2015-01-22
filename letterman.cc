@@ -4,6 +4,7 @@
 #include "mounted_devices.h"
 #include "hive_crawler.h"
 #include "exception.h"
+#include "endian.h"
 #include "util.h"
 using namespace std;
 using namespace letterman;
