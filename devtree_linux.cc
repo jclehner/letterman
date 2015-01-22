@@ -50,7 +50,7 @@ namespace letterman {
 	const string DevTree::kPropMinor = "MINOR";
 	const string DevTree::kPropFsLabel = "ID_FS_LABEL";
 	const string DevTree::kPropPartUuid = "ID_PART_ENTRY_UUID";
-	const string DevTree::kPropModel = "ID_MODEL";
+	const string DevTree::kPropHardware = "ID_MODEL";
 
 	const string DevTree::kPropMountPoint = "kPropMountPoint";
 	const string DevTree::kPropMbrId = "ID_PART_TABLE_UUID";

@@ -186,7 +186,12 @@ int main(int argc, char **argv)
 			else if (arg1 == "disks") data = DevTree::getDisks();
 
 			for (auto& e : data) {
-				cout << e.first << endl;
+				cout << e.first << "\t" << e.second[DevTree::kPropHardware] << endl;
+#if 0
+				for (auto& props : e.second) {
+					cout << "  " << props.first << "=" << props.second << endl;
+				}
+#endif
 			}
 #endif
 		} else {

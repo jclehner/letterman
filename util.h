@@ -11,6 +11,30 @@
 
 namespace letterman {
 	namespace util {
+		template<typename T> class Cleaner
+		{
+			public:
+			Cleaner(const T& function)
+			: _function(function)
+			{}
+
+			Cleaner(Cleaner&& other) = default;
+
+			~Cleaner()
+			{
+				_function();
+			}
+
+			private:
+			const T& _function;
+		};
+
+		template<typename T> static Cleaner<T> createCleaner(
+				const T& function)
+		{
+			return Cleaner<T>(function);
+		}
+
 		template<typename T> std::string toString(const T& t)
 		{
 			std::ostringstream ostr;

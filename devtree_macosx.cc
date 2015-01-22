@@ -32,7 +32,9 @@ namespace letterman {
 				return buf.get();
 			}
 
-			throw ErrnoException("CFStringGetCString");
+			return "";
+
+			//throw ErrnoException("CFStringGetCString");
 		}
 
 		static const string kPropIsDisk = fromStringRef(
@@ -44,8 +46,14 @@ namespace letterman {
 		const string kPropFsType = fromStringRef(
 				kDADiskDescriptionVolumeKindKey, false);
 
-		const string kPropDiskArbitrationDeviceModel = fromStringRef(
+		const string kPropDaDeviceModel = fromStringRef(
 				kDADiskDescriptionDeviceModelKey, false);
+
+		const string kPropDaDeviceVendor = fromStringRef(
+				kDADiskDescriptionDeviceVendorKey, false);
+
+		const string kPropDaDevicePath = fromStringRef(
+				kDADiskDescriptionDevicePathKey, false);
 
 		string toString(CFTypeRef ref, bool releaseIfString = false)
 		{
@@ -92,7 +100,7 @@ namespace letterman {
 	const string DevTree::kPropMountPoint = fromStringRef(
 			kDADiskDescriptionVolumePathKey, false);
 
-	const string DevTree::kPropModel = "kPropModel";
+	const string DevTree::kPropHardware = "kPropHardware";
 	const string DevTree::kPropMbrId = DevTree::kNoMatchIfSetAsPropKey;
 	const string DevTree::kPropPartOffsetBlocks = DevTree::kNoMatchIfSetAsPropKey;
 	const string DevTree::kPropPartOffsetBytes = DevTree::kNoMatchIfSetAsPropKey;
@@ -150,7 +158,7 @@ namespace letterman {
 
 			if (!props.empty()) {
 				props[kPropDiskId] = props[kPropMajor] + ":" + props[kPropBsdUnit];
-				props[kPropModel] = props[kPropDiskArbitrationDeviceModel];
+				props[kPropHardware] = props[kPropDaDeviceVendor] + props[kPropDaDeviceModel];
 
 				if (isPartition(props)) {
 					props[kPropIsNtfs] = (props[kPropFsType] == "ntfs" ? "1" : "0");
@@ -159,6 +167,12 @@ namespace letterman {
 					} else if (props[kPropMountPoint][0] != '/') {
 						props[kPropMountPoint] = "";
 					}
+				}
+
+				if (props[kPropDevice].find("disk") == 0) {
+					// The key must be a readable device file,
+					// which on OSX are the /dev/rdisk? files.
+					props[kPropDevice].insert(0, "/dev/r");
 				}
 
 				ret[props[kPropDevice]] = props;
@@ -186,6 +200,9 @@ namespace letterman {
 		unsigned cd = 0, dvd = 0;
 
 		while ((device = IOIteratorNext(iter))) {
+			auto cleaner(util::createCleaner(
+					[&device] () { IOObjectRelease(device); }));
+
 			io_string_t path;
 
 			kr = IORegistryEntryGetPath(device, kIOServicePlane, path);
@@ -223,17 +240,33 @@ namespace letterman {
 				continue;
 			}
 
-			string vendor(toString(val));
+			string hardware(toString(val));
 
 			val = CFDictionaryGetValue(dict, CFSTR(kIOPropertyProductNameKey));
 			if (!val) {
 				continue;
 			}
 
-			ret[fakeDev][kPropIsDisk] = "1";
-			ret[fakeDev][kPropModel] = vendor + toString(val);
+			hardware += toString(val);
 
-			IOObjectRelease(device);
+			// Lookup the path in the current disk map, so we don't
+			// add duplicate entries if there's a medium in the optical
+			// drive.
+
+			bool skip = false;
+
+			for (auto& dev : ret) {
+				if (dev.second[kPropDaDevicePath] == path) {
+					skip = true;
+					break;
+				}
+			}
+
+			if (!skip) {
+				ret[fakeDev][kPropIsDisk] = "1";
+				ret[fakeDev][kPropHardware] = hardware;
+				ret[fakeDev][kPropDaDevicePath] = path;
+			}
 		}
 
 		return ret;

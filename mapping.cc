@@ -377,10 +377,6 @@ namespace letterman {
 
 	string GenericMapping::osDeviceName() const
 	{
-		// FIXME this does not work on OSX, as the data
-		// obtained from DiskArbitration don't include the
-		// optical drive if it contains no medium.
-
 		string path(_path);
 
 		string::size_type pos = path.find("SCSI\\CdRom");
@@ -409,7 +405,7 @@ namespace letterman {
 			if (pos == string::npos) return kOsNameUnknown;
 
 			string model(path.substr(begin, pos - begin));
-			Properties criteria = {{ DevTree::kPropModel, model }};
+			Properties criteria = {{ DevTree::kPropHardware, model }};
 
 			map<string, Properties> results(DevTree::getDisks(criteria));
 			if (results.empty()) {
@@ -442,7 +438,7 @@ namespace letterman {
 			string ret;
 
 			for (auto& disk : DevTree::getDisks()) {
-				if (path.find(disk.second[DevTree::kPropModel]) == begin) {
+				if (path.find(disk.second[DevTree::kPropHardware]) == begin) {
 					if (!ret.empty()) {
 						// We have more than one match!
 						return kOsNameUnknown;
