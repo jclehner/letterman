@@ -127,7 +127,7 @@ namespace letterman {
 		}
 
 		unsigned resolveExtendedPartition(ifstream& in, const uint64_t extLbaStart, 
-				uint64_t ebrLbaStart, const uint64_t lbaStart, unsigned& counter)
+				uint64_t ebrLbaStart, const uint64_t offset, unsigned& counter)
 		{
 			MBR ebr;
 
@@ -140,11 +140,11 @@ namespace letterman {
 
 			ebrLbaStart = extLbaStart + ebr.partitions[1].lbaStart;
 
-			if (logPartLbaStart == lbaStart) {
+			if (logPartLbaStart == offset) {
 				return counter;
 			} else if (ebrLbaStart != extLbaStart) {
 				return resolveExtendedPartition(in, extLbaStart, ebrLbaStart,
-						lbaStart, ++counter);
+						offset, ++counter);
 			}
 
 			return 0;
@@ -165,7 +165,7 @@ namespace letterman {
 				return "";
 			}
 
-			for (auto& disk : DevTree::getDisks(Properties())) {
+			for (auto& disk : DevTree::getDisks()) {
 				MBR mbr;
 				ifstream in(disk.first.c_str());
 				if (!in.good() || !mbr.read(in)) {
@@ -186,7 +186,7 @@ namespace letterman {
 							return getPartitionName(disk.first, i + 1);
 						} else if (isEbrEntry(mbr.partitions[i])) {
 							unsigned partition = resolveExtendedPartition(in, partLbaStart,
-									lbaStart, counter);
+									lbaStart * 512, counter);
 
 							if (partition) {
 								return getPartitionName(disk.first, partition);
@@ -271,12 +271,10 @@ namespace letterman {
 		string disk;
 		map<string, Properties> result(DevTree::getDisks(criteria));
 
-#define __APPLE__
-
 		if (result.empty()) {
 #ifdef __APPLE__
 			if (_offset % 512 == 0) {
-				disk = resolveMbrDiskOrPartition(_disk, _offset, true);
+				disk = resolveMbrDiskOrPartition(_disk, _offset / 512, true);
 			}
 #else
 			disk = resolveMbrDiskOrPartition(_disk);
