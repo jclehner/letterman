@@ -127,7 +127,7 @@ namespace letterman {
 		}
 
 		unsigned resolveExtendedPartition(ifstream& in, const uint64_t extLbaStart, 
-				uint64_t ebrLbaStart, const uint64_t offset, unsigned& counter)
+				uint64_t ebrLbaStart, const uint64_t searchOffset, unsigned& counter)
 		{
 			MBR ebr;
 
@@ -135,16 +135,17 @@ namespace letterman {
 				return 0;
 			}
 
+
 			uint64_t logPartLbaStart = 
 				ebrLbaStart + ebr.partitions[0].lbaStart;
 
 			ebrLbaStart = extLbaStart + ebr.partitions[1].lbaStart;
 
-			if (logPartLbaStart == offset) {
+			if (logPartLbaStart == searchOffset) {
 				return counter;
 			} else if (ebrLbaStart != extLbaStart) {
 				return resolveExtendedPartition(in, extLbaStart, ebrLbaStart,
-						offset, ++counter);
+						searchOffset, ++counter);
 			}
 
 			return 0;
