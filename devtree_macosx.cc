@@ -155,7 +155,7 @@ namespace letterman {
 					props[kPropIsNtfs] = (props[kPropFsType] == "ntfs" ? "1" : "0");
 					if (props[kPropMountPoint].find("file://") == 0) {
 						props[kPropMountPoint] = props[kPropMountPoint].substr(7);
-					} else {
+					} else if (props[kPropMountPoint][0] != '/') {
 						props[kPropMountPoint] = "";
 					}
 				}
@@ -182,6 +182,8 @@ namespace letterman {
 		if (kr != KERN_SUCCESS)
 			throw ErrnoException("IOServiceGetMatchingServices");
 
+		unsigned cd = 0, dvd = 0;
+
 		while ((device = IOIteratorNext(iter))) {
 			io_string_t path;
 
@@ -192,10 +194,15 @@ namespace letterman {
 					device, CFSTR(kIOBlockStorageDeviceTypeKey),
 					kCFAllocatorDefault, 0);
 
+			string fakeDev;
+
 			if (prop) {
 				string deviceType(toString(prop, false));
-				if (deviceType != "DVD" && deviceType != "CD" 
-					&& deviceType != "BD") {
+				if (deviceType == "DVD" || deviceType == "BD") {
+					fakeDev = "(dvd" << dvd++ << ")";
+				} else if (deviceType == "CD") {
+					fakeDev = "(cdrom" << cd++ << ")";
+				} else {
 					continue;
 				}
 			}
@@ -215,7 +222,6 @@ namespace letterman {
 				continue;
 			}
 
-
 			string vendor(toString(val));
 
 			val = CFDictionaryGetValue(dict, CFSTR(kIOPropertyProductNameKey));
@@ -223,13 +229,8 @@ namespace letterman {
 				continue;
 			}
 
-			string product(toString(val));
-
-			// Unlike Linux, Mac OS X does not provide a device file for
-			// optical disk drives, and the IO Registry path is a
-			// prohibitively long string, so we just use a human readable
-			// string as the key for our 'ret' map.
-			ret[vendor + " " + product][kPropModel] = vendor + product;
+			ret[fakeDev][kPropIsDisk] = "1";
+			ret[fakeDev][kPropModel] = vendor + toString(val);
 
 			IOObjectRelease(device);
 		}
