@@ -43,7 +43,7 @@ namespace letterman {
 		const string kPropFsType = fromStringRef(
 				kDADiskDescriptionVolumeKindKey, false);
 
-		const string kPropDeviceModelMounted = fromStringRef(
+		const string kPropDiskArbitrationDeviceModel = fromStringRef(
 				kDADiskDescriptionDeviceModelKey, false);
 
 		string toString(CFTypeRef ref, bool releaseIfString = false)
@@ -118,7 +118,9 @@ namespace letterman {
 		Properties props;
 		io_service_t device;
 
-		// First pass: get mounted device info
+		// First pass: get fixed disk info from DiskArbitration.
+		// This does not include optical drives, as these have no
+		// associated device file when no medium is present.
 
 		while ((device = IOIteratorNext(iter))) {
 			DADiskRef disk = DADiskCreateFromIOMedia(
@@ -147,6 +149,7 @@ namespace letterman {
 
 			if (!props.empty()) {
 				props[kPropDiskId] = props[kPropMajor] + ":" + props[kPropBsdUnit];
+				props[kPropModel] = props[kPropDiskArbitrationDeviceModel];
 
 				if (isPartition(props)) {
 					props[kPropIsNtfs] = (props[kPropFsType] == "ntfs" ? "1" : "0");
@@ -168,7 +171,8 @@ namespace letterman {
 
 		CFRelease(session);
 
-		// Second pass: get optical drive device info
+		// Second pass: get optical drive device info from the
+		// IORegistry.
 
 		kr = IOServiceGetMatchingServices(
 				kIOMasterPortDefault,
