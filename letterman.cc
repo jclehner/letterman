@@ -160,23 +160,38 @@ int main(int argc, char **argv)
 				cout << endl;
 			}
 #if 1
-		} else if (action == "addmbr") {
+		} else if (action == "add") {
 			requireArgCount(argc, 3);
-			requireDriveLetter(arg1);
+			requireDriveLetter(arg2);
 
-			struct Entry
-			{
-				uint32_t disk;
-				uint64_t offset;
-			} __attribute__((packed));
+			if (arg1 == "mbr") {
+				requireArgCount(argc, 4);
 
-			Entry e;
-			e.disk = htole32(util::fromString<uint32_t>(arg2, ios::hex));
-			e.offset = htole64(util::fromString<uint64_t>(arg3));
+				struct Entry
+				{
+					uint32_t disk;
+					uint64_t offset;
+				} __attribute__((packed));
 
-			util::hexdump(cout, &e, 12, 4) << endl;
+				Entry e;
+				e.disk = htole32(util::fromString<uint32_t>(arg2, ios::hex));
+				e.offset = htole64(util::fromString<uint64_t>(arg3));
 
-			MountedDevices(hive, true).add(arg1[0], &e, 12);
+				util::hexdump(cout, &e, 12, 4) << endl;
+
+				MountedDevices(hive, true).add(arg2[0], &e, 12);
+			} else if (arg1 == "raw") {
+				string wstr;
+				for (char c : arg3) {
+					wstr += c;
+					wstr += '\0';
+				}
+
+				util::hexdump(cout, wstr.c_str(), wstr.size(), 4) << endl;
+				MountedDevices(hive, true).add(arg2[0], wstr.c_str(), wstr.size());
+			} else {
+				cerr << "Unknown type: " << arg1 << endl;
+			}
 		} else if (action == "dump") {
 			requireArgCount(argc, 1);
 
