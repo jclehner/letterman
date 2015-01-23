@@ -23,5 +23,5 @@ $(EXEC): $(OBJECTS)
 	$(CC) -c $(CCFLAGS) $< -o $@
 
 clean:
-	rm -f $(EXEC) $(OBJECTS)
+	rm -f *.o $(EXEC)
 
