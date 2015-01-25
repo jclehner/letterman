@@ -107,21 +107,21 @@ namespace {
 
 int main(int argc, char **argv)
 {
-	if (argc < 2) printUsageAndDie();
-
-	int i = 1;
-	string hive(getHiveFromArgs(argc, argv, i));
-
-	argc -= i;
-
-	if (!argc) printUsageAndDie();
-
-	string action(argv[i]);
-	string arg1(argc >= 2 ? argv[i + 1] : "");
-	string arg2(argc >= 3 ? argv[i + 2] : "");
-	string arg3(argc >= 4 ? argv[i + 3] : "");
-
 	try {
+		if (argc < 2) printUsageAndDie();
+
+		int i = 1;
+		string hive(getHiveFromArgs(argc, argv, i));
+
+		argc -= i;
+
+		if (!argc) printUsageAndDie();
+
+		string action(argv[i]);
+		string arg1(argc >= 2 ? argv[i + 1] : "");
+		string arg2(argc >= 3 ? argv[i + 2] : "");
+		string arg3(argc >= 4 ? argv[i + 3] : "");
+
 		if (action == "swap" || action == "change") {
 			requireArgCount(argc, 2);
 			requireDriveLetter(arg1);
