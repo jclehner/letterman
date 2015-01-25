@@ -1,6 +1,6 @@
-CCFLAGS=-Wall -std=c++11 -g
+CXXFLAGS=-Wall -std=c++11 -g
 LDFLAGS=-lhivex 
-CC=g++
+CXX=g++
 
 EXEC = letterman
 SOURCES = $(wildcard *.cc)
@@ -10,17 +10,19 @@ UNAME = $(shell uname)
 
 ifeq ($(UNAME), Linux)
 	LDFLAGS += -ludev
+	CXXFLAGS += -DLETTERMAN_LINUX
 endif
 
 ifeq ($(UNAME), Darwin)
 	LDFLAGS += -framework CoreFoundation -framework DiskArbitration -framework IOKit
+	CXXFLAGS += -DLETTERMAN_MACOSX
 endif
 
 $(EXEC): $(OBJECTS)
-	$(CC) $(OBJECTS) -o $(EXEC) $(LDFLAGS)
+	$(CXX) $(OBJECTS) -o $(EXEC) $(LDFLAGS)
 
 %.o: %.cc
-	$(CC) -c $(CCFLAGS) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 clean:
 	rm -f *.o $(EXEC)
