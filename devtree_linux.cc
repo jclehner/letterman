@@ -2,6 +2,7 @@
 #include <libudev.h>
 #include <algorithm>
 #include <mntent.h>
+#include <libgen.h>
 #include <fstream>
 #include <sstream>
 #include <memory>
@@ -30,14 +31,9 @@ namespace letterman {
 
 		string basename(const string& path)
 		{
-			char* p = strdup(path.c_str());
-			if ((p = basename(p))) {
-				string ret(p);
-				free(p);
-				return ret;
-			}
-
-			return path;
+			char* s = strdup(path.c_str());
+			auto cleaner(util::createCleaner([&s] () { free(s); }));
+			return ::basename(s);
 		}
 
 		string getMountPoint(const string& device)
