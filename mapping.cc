@@ -64,7 +64,7 @@ namespace letterman {
 
 		inline string getPartitionName(const string& disk, unsigned partition)
 		{
-#ifdef __APPLE__
+#ifdef LETTERMAN_MACOSX
 			return disk + "s" + util::toString(partition);
 #else
 			return disk + util::toString(partition);
@@ -255,7 +255,7 @@ namespace letterman {
 		map<string, Properties> result(DevTree::getDisks(criteria));
 
 		if (result.empty()) {
-#ifdef __APPLE__
+#ifndef LETTERMAN_LINUX
 			if (_offset % 512 == 0) {
 				disk = resolveMbrDiskOrPartition(_disk, _offset / 512, true);
 			}
@@ -271,7 +271,7 @@ namespace letterman {
 		if (disk.empty()) {
 			return kOsNameUnknown;
 		} 
-#ifdef __APPLE__
+#ifndef LETTERMAN_LINUX
 		else {
 			return disk;
 		}

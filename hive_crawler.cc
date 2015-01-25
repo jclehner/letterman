@@ -13,9 +13,6 @@ using namespace std;
 
 namespace letterman {
 	namespace {
-#ifdef __APPLE__
-#endif
-
 		struct ScopedMount
 		{
 			static ScopedMount create(const string& path)
@@ -31,7 +28,7 @@ namespace letterman {
 
 				ret._target = tmpl.get();
 
-#ifdef __APPLE__
+#ifdef LETTERMAN_MACOSX
 				struct NtfsMountOpts
 				{
 					const char* device;
@@ -65,7 +62,7 @@ namespace letterman {
 			~ScopedMount()
 			{
 				if (!_target.empty()) {
-#ifdef __linux__
+#ifdef LETTERMAN_LINUX
 					umount2(_target.c_str(), MNT_DETACH);
 #else
 					unmount(_target.c_str(), MNT_FORCE);

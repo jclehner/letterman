@@ -1,4 +1,4 @@
-#ifdef __APPLE__
+#ifdef LETTERMAN_MACOSX
 #include <DiskArbitration/DADisk.h>
 #include <IOKit/storage/IOBlockStorageDevice.h>
 #include <IOKit/storage/IOMedia.h>

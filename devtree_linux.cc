@@ -1,4 +1,4 @@
-#ifdef __linux__
+#ifdef LETTERMAN_LINUX
 #include <libudev.h>
 #include <algorithm>
 #include <mntent.h>
