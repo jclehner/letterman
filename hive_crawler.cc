@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <memory>
 #include <vector>
+#include <set>
 #include "hive_crawler.h"
 #include "exception.h"
 #include "devtree.h"
@@ -13,11 +14,15 @@ using namespace std;
 
 namespace letterman {
 	namespace {
-		struct ScopedMount
+
+		struct Mount
 		{
-			static ScopedMount create(const string& path)
+			static const Mount* create(const string& path)
 			{
-				ScopedMount ret;
+				auto iter = mounts.find(path);
+				if (iter != mounts.end()) return &iter->second;
+
+				Mount& ret = mounts[path];
 
 				unique_ptr<char[]> tmpl(new char[32]);
 				strcpy(tmpl.get(), "/tmp/lettermanXXXXXX");
@@ -54,12 +59,12 @@ namespace letterman {
 					throw ErrnoException("mount: " + path);
 				}
 
-				ret._path = path;
+				ret._fs = path;
 
-				return ret;
+				return &ret;
 			}
 
-			~ScopedMount()
+			~Mount()
 			{
 				if (!_target.empty()) {
 #ifdef LETTERMAN_LINUX
@@ -71,13 +76,26 @@ namespace letterman {
 				}
 			}
 
-			const string& target() const 
+			const string& target() const
 			{ return _target; }
 
 			private:
-			string _path;
+			string _fs;
 			string _target;
+
+			static map<string, Mount> mounts;
 		};
+
+		map<string, Mount> Mount::mounts;
+
+		string getMountPoint(const string& device)
+		{
+			Properties criteria = {{
+				DevTree::kPropDeviceMountable, device }};
+			map<string, Properties> devices(DevTree::getPartitions(criteria));
+			if (devices.empty()) return "";
+			return devices.begin()->second[DevTree::kPropMountPoint];
+		}
 
 		string findFirst(const string& path, string name, bool findDir = true)
 		{
@@ -112,8 +130,6 @@ namespace letterman {
 			throw UserFault(string("No such ") + (findDir ? "directory" : "file") + 
 					" in " + path + ": " + name);
 		}
-
-
 	}
 
 	set<WindowsInstall> getAllWindowsInstalls()
@@ -154,9 +170,13 @@ namespace letterman {
 		}
 
 		if (S_ISBLK(st.st_mode)) {
+			string mountPoint(getMountPoint(path));
+			if (!mountPoint.empty()) {
+				return hiveFromSysDrive(mountPoint);
+			}
 			if (geteuid() != 0) throw UserFault("Operation requires root");
-			auto m(ScopedMount::create(path));
-			return hiveFromSysDrive(m.target());
+			auto m = Mount::create(path);
+			return hiveFromSysDrive(m->target());
 		} else if(!S_ISDIR(st.st_mode)) {
 			throw UserFault("Not a device or directory: " + path);
 		}
