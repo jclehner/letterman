@@ -43,7 +43,7 @@ namespace letterman {
 						static_cast<NtfsMountOpts*>(valloc(sizeof(NtfsMountOpts))),
 						[] (void* p) { free(p); });
 
-				if (opts) throw ErrnoException("valloc");
+				if (!opts) throw ErrnoException("valloc");
 
 				*opts = {
 					.device = path.c_str(),
