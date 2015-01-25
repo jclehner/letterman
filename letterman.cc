@@ -49,16 +49,17 @@ namespace {
 		if (opt == "--probe" /*|| argv[1][0] != '-'*/) {
 			set<WindowsInstall> installs(getAllWindowsInstalls());
 			if (installs.empty()) {
-				cerr << "No Windows installations found. Specify manually with" <<
-					"--sysdrive, --sysroot, --sysdir, " << endl;
-				cerr << "or	--hive" << endl;
-				exit(1);
+				throw UserFault(
+						"No Windows installations found. Specify one manually\n"
+						"with --sysdrive, --sysroot, --sysdir or --hive. Use\n"
+						"--probe to try auto-detection (needs root).\n");
 			} else if (installs.size() > 1) {
-				cerr << "Multiple windows installations found. Specify manually with" << endl;
+				ostringstream ostr;
+				ostr << "Multiple windows installations found. Specify manually with" << endl;
 				for (auto& install : installs) {
-					cerr << "  " << install << endl;
+					ostr << "  " << install << endl;
 				}
-				exit(1);
+				throw UserFault(ostr.str());
 			}
 
 			index += 1;
@@ -67,8 +68,7 @@ namespace {
 
 		if (opt.substr(0, 2) == "--") {
 			if (argc < 3) {
-				cerr << opt << " requires an argument" << endl;
-				exit(1);
+				throw UserFault(opt + " requires an argument");
 			}
 
 			string arg(argv[2]);
@@ -85,18 +85,16 @@ namespace {
 				return arg;
 			}
 
-			cerr << "Unknown option " << opt << endl;
-			exit(1);
+			throw UserFault("Unknown option " + opt);
 		}
 
-		cerr << "You must specify a Windows installation with" <<
-			"--sysdrive, --sysroot, --sysdir," << endl;
-		cerr << "--hive or use --probe to use auto-detect" << endl;
-		exit(1);
+		throw UserFault(
+				"You must specify a Windows installation manually using\n"
+				"--sysdrive, --sysroot, --sysdir or --hive. Use\n"
+				"--probe to try auto-detection (needs root).\n");
 	}
 
-	void printUsageAndDie() __attribute__((noreturn));
-	void printUsageAndDie()
+	[[noreturn]] void printUsageAndDie()
 	{
 		cerr << "usage: letterman [action] [arguments ...]" << endl;
 		cerr << "actions: list, swap, change, remove" << endl;
