@@ -82,7 +82,7 @@ namespace letterman {
 
 	}
 
-	const string DevTree::kPropDevice = fromStringRef(
+	const string DevTree::kPropDeviceName = fromStringRef(
 			kDADiskDescriptionMediaBSDNameKey, false);
 
 	const string DevTree::kPropMajor = fromStringRef(
@@ -101,6 +101,8 @@ namespace letterman {
 			kDADiskDescriptionVolumePathKey, false);
 
 	const string DevTree::kPropHardware = "kPropHardware";
+	const string DevTree::kPropDeviceMountable = "kPropDeviceMountable";
+	const string DevTree::kPropDeviceReadable = "kPropDeviceReadable";
 	const string DevTree::kPropMbrId = DevTree::kNoMatchIfSetAsPropKey;
 	const string DevTree::kPropPartOffsetBlocks = DevTree::kNoMatchIfSetAsPropKey;
 	const string DevTree::kPropPartOffsetBytes = DevTree::kNoMatchIfSetAsPropKey;
@@ -169,13 +171,12 @@ namespace letterman {
 					}
 				}
 
-				if (props[kPropDevice].find("disk") == 0) {
-					// The key must be a readable device file,
-					// which on OSX are the /dev/rdisk? files.
-					props[kPropDevice].insert(0, "/dev/r");
+				if (props[kPropDeviceName].find("disk") == 0) {
+					props[kPropDeviceMountable] = "/dev/" + props[kPropDeviceName];
+					props[kPropDeviceReadable] = "/dev/r" + props[kPropDeviceName];
 				}
 
-				ret[props[kPropDevice]] = props;
+				ret[props[kPropDeviceName]] = props;
 			}
 
 			props.clear();

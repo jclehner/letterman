@@ -12,7 +12,10 @@ namespace letterman {
 	{
 		public:
 
-		static const std::string kPropDevice;
+		static const std::string kPropDeviceName;
+		static const std::string kPropDeviceMountable;
+		static const std::string kPropDeviceReadable;
+
 		static const std::string kPropFsLabel;
 		static const std::string kPropMajor;
 		static const std::string kPropMinor;

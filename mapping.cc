@@ -167,14 +167,15 @@ namespace letterman {
 			}
 
 			for (auto& disk : DevTree::getDisks()) {
+				const string& device = disk.second[DevTree::kPropDeviceReadable];
+				ifstream in(device.c_str());
 				MBR mbr;
-				ifstream in(disk.first.c_str());
 				if (!in.good() || !mbr.read(in)) {
 					continue;
 				}
 
 				if (mbr.id == id) {
-					if (!useLbaStart) return disk.first;
+					if (!useLbaStart) return device;
 
 					unsigned counter = 5;
 
@@ -184,13 +185,13 @@ namespace letterman {
 						uint32_t partLbaStart = mbr.partitions[i].lbaStart;
 
 						if (partLbaStart == lbaStart) {
-							return getPartitionName(disk.first, i + 1);
+							return getPartitionName(device, i + 1);
 						} else if (isEbrEntry(mbr.partitions[i])) {
 							unsigned partition = resolveExtendedPartition(in, partLbaStart,
 									lbaStart * 512, counter);
 
 							if (partition) {
-								return getPartitionName(disk.first, partition);
+								return getPartitionName(device, partition);
 							}
 						}
 					}
@@ -225,26 +226,7 @@ namespace letterman {
 	string RawMapping::toString(int padding) const
 	{
 		ostringstream ostr;
-		ostr << hex << setfill('0');
-
-		for (size_t i = 0; i < _data.size(); i += 16) {
-			if (i != 0) ostr << endl;
-			ostr << string(padding, ' ') << setw(4) << i << " ";
-			string ascii;
-			for (size_t k = 0; k != 16; ++k) {
-				if (k == 8) ostr << " ";
-				if (i + k < _data.size()) {
-					int c = _data[i + k] & 0xff;
-					ostr << " " << setw(2) << c;
-					ascii += isprint(c) ? c : '.';
-				} else {
-					ostr << "   ";
-				}
-			}
-
-			ostr << "  |" << ascii << "|";
-		}
-
+		util::hexdump(ostr, _data, padding);
 		return ostr.str();
 	}
 
@@ -283,7 +265,7 @@ namespace letterman {
 		} else {
 			// TODO handle the not-so-fringe case where getDisks() returns
 			// more than one result
-			disk = result.begin()->first;
+			disk = result.begin()->second[DevTree::kPropDeviceReadable];
 		}
 
 		if (disk.empty()) {
@@ -300,7 +282,7 @@ namespace letterman {
 		// ignoring the kPropMbrId
 
 		criteria[DevTree::kPropMbrId] = DevTree::kIgnoreValue;
-		criteria[DevTree::kPropDevice] = disk;
+		criteria[DevTree::kPropDeviceReadable] = disk;
 		result = DevTree::getDisks(criteria);
 
 		if (result.empty()) {
@@ -310,7 +292,7 @@ namespace letterman {
 		}
 
 		// Remove the disk, as we are searching for the partition now
-		criteria[DevTree::kPropDevice] = DevTree::kIgnoreValue;
+		criteria[DevTree::kPropDeviceReadable] = DevTree::kIgnoreValue;
 
 		Properties props = result.begin()->second;
 

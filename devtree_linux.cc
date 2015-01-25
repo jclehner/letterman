@@ -28,6 +28,18 @@ namespace letterman {
 			transform(str.begin(), str.end(), str.begin(), ::toupper);
 		}
 
+		string basename(const string& path)
+		{
+			char* p = strdup(path.c_str());
+			if ((p = basename(p))) {
+				string ret(p);
+				free(p);
+				return ret;
+			}
+
+			return path;
+		}
+
 		string getMountPoint(const string& device)
 		{
 			FILE* fp = setmntent("/proc/mounts", "r");
@@ -45,7 +57,10 @@ namespace letterman {
 		}
 	}
 
-	const string DevTree::kPropDevice = "DEVNAME";
+	const string DevTree::kPropDeviceName = "kPropDeviceName";
+	const string DevTree::kPropDeviceMountable = "DEVNAME";
+	const string DevTree::kPropDeviceReadable = DevTree::kPropDeviceMountable;
+
 	const string DevTree::kPropMajor = "MAJOR";
 	const string DevTree::kPropMinor = "MINOR";
 	const string DevTree::kPropFsLabel = "ID_FS_LABEL";
@@ -106,9 +121,10 @@ namespace letterman {
 					continue;
 				}
 
+				props[kPropDeviceName] = basename(props["DEVNAME"]);
 				capitalize(props[kPropPartUuid]);
 
-				entries[props["DEVNAME"]] = props;
+				entries[props[kPropDeviceName]] = props;
 			}
 		}
 

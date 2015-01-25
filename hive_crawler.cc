@@ -131,7 +131,7 @@ namespace letterman {
 				wi.path = e.second[DevTree::kPropMountPoint];
 				if (wi.path.empty()) {
 					wi.isDevice = true;
-					wi.path = e.first;
+					wi.path = e.second[DevTree::kPropDeviceMountable];
 				} else {
 					wi.isDevice = false;
 				}
