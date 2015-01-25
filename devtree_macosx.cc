@@ -75,11 +75,19 @@ namespace letterman {
 				CFStringRef str = CFStringCreateWithFormat(
 						NULL, NULL, CFSTR("%@"), ref);
 				return fromStringRef(str);
+			} else if (id == CFURLGetTypeID()) {
+				CFStringRef str = CFURLCopyFileSystemPath(
+						static_cast<CFURLRef>(ref),
+						kCFURLPOSIXPathStyle);
+				string ret(fromStringRef(str));
+				// The mount points used by the hive crawler
+				// may be expanded from /tmp/... to private/tmp/...
+				// without a leading slash!
+				return ret[0] == '/' ? ret : "/" + ret;
 			}
 
 			return fromStringRef(CFCopyDescription(ref));
 		}
-
 	}
 
 	const string DevTree::kPropDeviceName = fromStringRef(
@@ -164,11 +172,6 @@ namespace letterman {
 
 				if (isPartition(props)) {
 					props[kPropIsNtfs] = (props[kPropFsType] == "ntfs" ? "1" : "0");
-					if (props[kPropMountPoint].find("file://") == 0) {
-						props[kPropMountPoint] = props[kPropMountPoint].substr(7);
-					} else if (props[kPropMountPoint][0] != '/') {
-						props[kPropMountPoint] = "";
-					}
 				}
 
 				if (props[kPropDeviceName].find("disk") == 0) {

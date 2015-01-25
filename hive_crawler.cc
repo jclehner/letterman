@@ -68,7 +68,7 @@ namespace letterman {
 #ifdef __linux__
 					umount2(_target.c_str(), MNT_DETACH);
 #else
-					unmount(_target.c_str(), 0);
+					unmount(_target.c_str(), MNT_FORCE);
 #endif
 					rmdir(_target.c_str());
 				}
