@@ -27,6 +27,8 @@ namespace letterman {
 		static const std::string kPropRevision;
 		static const std::string kPropSerial;
 
+		static const std::string kPropLbaSize;
+
 		static const std::string kPropMountPoint;
 		static const std::string kPropMbrId;
 		static const std::string kPropPartOffsetBlocks;
@@ -46,6 +48,8 @@ namespace letterman {
 		static std::map<std::string, Properties> getPartitions(
 				const Properties& criteria = Properties())
 		{ return getDisksOrPartitions(criteria, false); }
+
+		static size_t blockSize(const Properties& props);
 
 		private:
 

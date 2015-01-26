@@ -1,5 +1,6 @@
 #include <iostream>
 #include "devtree.h"
+#include "util.h"
 using namespace std;
 
 namespace letterman {
@@ -14,6 +15,16 @@ namespace letterman {
 
 	const string DevTree::kPropDiskId = "kPropDiskId";
 	const string DevTree::kPropIsNtfs = "kPropIsNtfs";
+
+	size_t DevTree::blockSize(const Properties& props)
+	{
+		auto iter = props.find(kPropLbaSize);
+		if (iter != props.end() && !iter->second.empty()) {
+			return util::fromString<size_t>(iter->second);
+		} else {
+			return 512;
+		}
+	}
 
 	bool DevTree::arePropsMatching(
 			const Properties& all, const Properties& criteria)

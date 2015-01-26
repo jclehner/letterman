@@ -113,6 +113,9 @@ namespace letterman {
 	const string DevTree::kPropRevision = fromStringRef(
 			kDADiskDescriptionDeviceRevisionKey, false);
 
+	const string DevTree::kPropLbaSize = fromStringRef(
+			kDADiskDescriptionMediaBlockSizeKey, false);
+
 	const string DevTree::kPropSerial = "kPropSerial";
 	const string DevTree::kPropHardware = "kPropHardware";
 	const string DevTree::kPropDeviceMountable = "kPropDeviceMountable";
