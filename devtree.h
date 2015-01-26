@@ -25,6 +25,7 @@ namespace letterman {
 		static const std::string kPropVendor;
 		static const std::string kPropModel;
 		static const std::string kPropRevision;
+		static const std::string kPropSerial;
 
 		static const std::string kPropMountPoint;
 		static const std::string kPropMbrId;

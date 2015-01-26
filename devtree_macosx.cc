@@ -51,6 +51,8 @@ namespace letterman {
 
 		string toString(CFTypeRef ref, bool releaseIfString = false)
 		{
+			if (!ref) return "";
+
 			CFTypeID id = CFGetTypeID(ref);
 
 			if (id == CFStringGetTypeID()) {
@@ -111,6 +113,7 @@ namespace letterman {
 	const string DevTree::kPropRevision = fromStringRef(
 			kDADiskDescriptionDeviceRevisionKey, false);
 
+	const string DevTree::kPropSerial = "kPropSerial";
 	const string DevTree::kPropHardware = "kPropHardware";
 	const string DevTree::kPropDeviceMountable = "kPropDeviceMountable";
 	const string DevTree::kPropDeviceReadable = "kPropDeviceReadable";
@@ -227,7 +230,7 @@ namespace letterman {
 				} else if (deviceType == "CD") {
 					fakeDev = "(cdrom" + util::toString(cd++) + ")";
 				} else {
-					continue;
+					//continue;
 				}
 			}
 
@@ -242,40 +245,35 @@ namespace letterman {
 			CFDictionaryRef dict = static_cast<CFDictionaryRef>(prop);
 
 			const void* val = CFDictionaryGetValue(dict, CFSTR(kIOPropertyVendorNameKey));
-			if (!val) {
-				continue;
-			}
-
 			string vendor(toString(val));
 
 			val = CFDictionaryGetValue(dict, CFSTR(kIOPropertyProductNameKey));
-			if (!val) {
-				continue;
-			}
-
 			string model(toString(val));
 
 			val = CFDictionaryGetValue(dict, CFSTR(kIOPropertyProductRevisionLevelKey));
-			string revision(val ? toString(val) : "");
+			string revision(toString(val));
+
+			val = CFDictionaryGetValue(dict, CFSTR(kIOPropertyProductSerialNumberKey));
+			string serial(toString(val));
 
 			// Lookup the path in the current disk map, so we don't
 			// add duplicate entries if there's a medium in the optical
 			// drive.
 
-			bool skip = false;
-
 			for (auto& dev : ret) {
 				if (dev.second[kPropDaDevicePath] == path) {
-					skip = true;
+					dev.second[kPropSerial] = serial;
+					fakeDev.clear();
 					break;
 				}
 			}
 
-			if (!skip) {
+			if (!fakeDev.empty()) {
 				ret[fakeDev][kPropIsDisk] = "1";
 				ret[fakeDev][kPropVendor] = vendor;
 				ret[fakeDev][kPropModel] = model;
 				ret[fakeDev][kPropRevision] = revision;
+				ret[fakeDev][kPropSerial] = serial;
 				ret[fakeDev][kPropDaDevicePath] = path;
 			}
 		}
