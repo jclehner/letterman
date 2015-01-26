@@ -20,7 +20,11 @@ namespace letterman {
 		static const std::string kPropMajor;
 		static const std::string kPropMinor;
 		static const std::string kPropPartUuid;
+
 		static const std::string kPropHardware;
+		static const std::string kPropVendor;
+		static const std::string kPropModel;
+		static const std::string kPropRevision;
 
 		static const std::string kPropMountPoint;
 		static const std::string kPropMbrId;

@@ -46,12 +46,6 @@ namespace letterman {
 		const string kPropFsType = fromStringRef(
 				kDADiskDescriptionVolumeKindKey, false);
 
-		const string kPropDaDeviceModel = fromStringRef(
-				kDADiskDescriptionDeviceModelKey, false);
-
-		const string kPropDaDeviceVendor = fromStringRef(
-				kDADiskDescriptionDeviceVendorKey, false);
-
 		const string kPropDaDevicePath = fromStringRef(
 				kDADiskDescriptionDevicePathKey, false);
 
@@ -60,11 +54,11 @@ namespace letterman {
 			CFTypeID id = CFGetTypeID(ref);
 
 			if (id == CFStringGetTypeID()) {
-				return fromStringRef(static_cast<CFStringRef>(ref), 
+				return fromStringRef(static_cast<CFStringRef>(ref),
 						releaseIfString);
 			} else if (id == CFUUIDGetTypeID()) {
 				CFStringRef str = CFUUIDCreateString(
-						kCFAllocatorDefault, 
+						kCFAllocatorDefault,
 						static_cast<CFUUIDRef>(ref));
 				return fromStringRef(str);
 			} else if (id == CFBooleanGetTypeID()) {
@@ -107,6 +101,15 @@ namespace letterman {
 
 	const string DevTree::kPropMountPoint = fromStringRef(
 			kDADiskDescriptionVolumePathKey, false);
+
+	const string DevTree::kPropModel = fromStringRef(
+			kDADiskDescriptionDeviceModelKey, false);
+
+	const string DevTree::kPropVendor = fromStringRef(
+			kDADiskDescriptionDeviceVendorKey, false);
+
+	const string DevTree::kPropRevision = fromStringRef(
+			kDADiskDescriptionDeviceRevisionKey, false);
 
 	const string DevTree::kPropHardware = "kPropHardware";
 	const string DevTree::kPropDeviceMountable = "kPropDeviceMountable";
@@ -168,7 +171,6 @@ namespace letterman {
 
 			if (!props.empty()) {
 				props[kPropDiskId] = props[kPropMajor] + ":" + props[kPropBsdUnit];
-				props[kPropHardware] = props[kPropDaDeviceVendor] + props[kPropDaDeviceModel];
 
 				if (isPartition(props)) {
 					props[kPropIsNtfs] = (props[kPropFsType] == "ntfs" ? "1" : "0");
@@ -244,14 +246,17 @@ namespace letterman {
 				continue;
 			}
 
-			string hardware(toString(val));
+			string vendor(toString(val));
 
 			val = CFDictionaryGetValue(dict, CFSTR(kIOPropertyProductNameKey));
 			if (!val) {
 				continue;
 			}
 
-			hardware += toString(val);
+			string model(toString(val));
+
+			val = CFDictionaryGetValue(dict, CFSTR(kIOPropertyProductRevisionLevelKey));
+			string revision(val ? toString(val) : "");
 
 			// Lookup the path in the current disk map, so we don't
 			// add duplicate entries if there's a medium in the optical
@@ -268,9 +273,16 @@ namespace letterman {
 
 			if (!skip) {
 				ret[fakeDev][kPropIsDisk] = "1";
-				ret[fakeDev][kPropHardware] = hardware;
+				ret[fakeDev][kPropVendor] = vendor;
+				ret[fakeDev][kPropModel] = model;
+				ret[fakeDev][kPropRevision] = revision;
 				ret[fakeDev][kPropDaDevicePath] = path;
 			}
+		}
+
+		for (auto& dev : ret) {
+			Properties& props = dev.second;
+			props[kPropHardware] = props[kPropVendor] + props[kPropModel];
 		}
 
 		return ret;
