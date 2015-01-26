@@ -1,4 +1,4 @@
-CXXFLAGS=-Wall -std=c++11 -g
+CXXFLAGS=-Wall -std=c++11 -g -Wextra
 LDFLAGS=-lhivex 
 CXX=g++
 
@@ -14,8 +14,11 @@ ifeq ($(UNAME), Linux)
 endif
 
 ifeq ($(UNAME), Darwin)
-	LDFLAGS += -framework CoreFoundation -framework DiskArbitration -framework IOKit
+	#ARCHES = -arch i386 -arch x86_64
+	CXXFLAGS += $(ARCHES)
+	LDFLAGS += $(ARCHES) -framework CoreFoundation -framework DiskArbitration -framework IOKit
 	CXXFLAGS += -DLETTERMAN_MACOSX
+
 endif
 
 $(EXEC): $(OBJECTS)
@@ -26,4 +29,3 @@ $(EXEC): $(OBJECTS)
 
 clean:
 	rm -f *.o $(EXEC)
-
