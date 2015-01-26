@@ -213,14 +213,14 @@ namespace letterman {
 		hivex_close(_hive);
 	}
 
-	vector<unique_ptr<Mapping>> MountedDevices::list(int flags) const
+	vector<Mapping::Ptr> MountedDevices::list(int flags) const
 	{
 		hive_value_h *values = hivex_node_values(_hive, _node);
 		if (!values) {
 			throw ErrnoException("hivex_node_values");
 		}
 
-		vector<unique_ptr<Mapping>> devices;
+		vector<Mapping::Ptr> devices;
 
 		for (; *values; ++values) {
 			int letter = 0;
@@ -243,7 +243,7 @@ namespace letterman {
 
 			if (!len) continue;
 
-			unique_ptr<Mapping> device(createMapping(toString(buf, len)));
+			Mapping::Ptr device(createMapping(toString(buf, len)));
 
 			if (letter) {
 				device->_name = MappingName::letter(letter);

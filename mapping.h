@@ -2,6 +2,7 @@
 #define LETTERMAN_DEVICES_H
 #include <stdint.h>
 #include <iostream>
+#include <memory>
 #include <string>
 
 namespace letterman {
@@ -46,6 +47,8 @@ namespace letterman {
 	class Mapping
 	{
 		public:
+
+		typedef std::unique_ptr<Mapping> Ptr;
 
 		static const std::string kOsNameNotAttached;
 		static const std::string kOsNameUnknown;

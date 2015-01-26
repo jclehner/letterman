@@ -16,8 +16,8 @@ class MountedDevices
 
 	static const int LIST_WITHOUT_LETTER = 1;
 
-	std::unique_ptr<Mapping> find(const MappingName& name) const;
-	std::vector<std::unique_ptr<Mapping>> list(int flags = 0) const;
+	Mapping::Ptr find(const MappingName& name) const;
+	std::vector<Mapping::Ptr> list(int flags = 0) const;
 
 	void swap(char a, char b);
 	void change(char from, char to);
