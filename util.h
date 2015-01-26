@@ -42,7 +42,7 @@ namespace letterman {
 			return ostr.str();
 		}
 
-		template<typename T> T fromString(const std::string& str, 
+		template<typename T> T fromString(const std::string& str,
 				std::ios_base::fmtflags mask = std::ios::dec)
 		{
 			T t;
@@ -67,12 +67,12 @@ namespace letterman {
 		inline std::ostream& hexdump(std::ostream& os, const void* data, size_t len,
 				unsigned padding = 0)
 		{
-			return hexdump(os, std::string(static_cast<const char*>(data), len), 
+			return hexdump(os, std::string(static_cast<const char*>(data), len),
 					padding);
 		}
 
 
-		template<typename T> using UniquePtrWithDeleter = 
+		template<typename T> using UniquePtrWithDeleter =
 			std::unique_ptr<T, std::function<void(T*)>>;
 	}
 }

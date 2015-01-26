@@ -126,7 +126,7 @@ namespace letterman {
 			}
 		}
 
-		unsigned resolveExtendedPartition(ifstream& in, const uint64_t extLbaStart, 
+		unsigned resolveExtendedPartition(ifstream& in, const uint64_t extLbaStart,
 				uint64_t ebrLbaStart, const uint64_t searchOffset, unsigned& counter)
 		{
 			MBR ebr;
@@ -136,7 +136,7 @@ namespace letterman {
 			}
 
 
-			uint64_t logPartLbaStart = 
+			uint64_t logPartLbaStart =
 				ebrLbaStart + ebr.partitions[0].lbaStart;
 
 			ebrLbaStart = extLbaStart + ebr.partitions[1].lbaStart;
@@ -151,10 +151,10 @@ namespace letterman {
 			return 0;
 		}
 
-		unsigned resolveExtendedPartition(ifstream& in, uint64_t extLbaStart, 
+		unsigned resolveExtendedPartition(ifstream& in, uint64_t extLbaStart,
 				uint64_t lbaStart, unsigned& counter)
 		{
-			return resolveExtendedPartition(in, extLbaStart, extLbaStart, 
+			return resolveExtendedPartition(in, extLbaStart, extLbaStart,
 					lbaStart, counter);
 		}
 
@@ -270,14 +270,14 @@ namespace letterman {
 
 		if (disk.empty()) {
 			return kOsNameUnknown;
-		} 
+		}
 #ifndef LETTERMAN_LINUX
 		else {
 			return disk;
 		}
 #endif
-		
-		// We have a disk name, but no partition yet. Do the lookup 
+
+		// We have a disk name, but no partition yet. Do the lookup
 		// again, this time explicitly specifying the disk and
 		// ignoring the kPropMbrId
 
@@ -336,7 +336,7 @@ namespace letterman {
 		Properties criteria = {{ DevTree::kPropPartUuid, guid }};
 		map<string, Properties> result(DevTree::getPartitions(criteria));
 		if (!result.empty()) {
-			// TODO handle the fringe case where there is more 
+			// TODO handle the fringe case where there is more
 			// than one result!
 			return result.begin()->first;
 		}
