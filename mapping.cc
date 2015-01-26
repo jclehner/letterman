@@ -126,12 +126,13 @@ namespace letterman {
 			}
 		}
 
-		unsigned resolveExtendedPartition(ifstream& in, const uint64_t extLbaStart,
-				uint64_t ebrLbaStart, const uint64_t searchOffset, unsigned& counter)
+		unsigned resolveExtendedPartition(ifstream& in, const size_t blockSize,
+				const uint64_t extLbaStart, uint64_t ebrLbaStart,
+				const uint64_t searchOffset, unsigned& counter)
 		{
 			MBR ebr;
 
-			if (!in.seekg(ebrLbaStart * 512) || !ebr.read(in)) {
+			if (!in.seekg(ebrLbaStart * blockSize) || !ebr.read(in)) {
 				return 0;
 			}
 
@@ -144,28 +145,23 @@ namespace letterman {
 			if (logPartLbaStart == searchOffset) {
 				return counter;
 			} else if (ebrLbaStart != extLbaStart) {
-				return resolveExtendedPartition(in, extLbaStart, ebrLbaStart,
-						searchOffset, ++counter);
+				return resolveExtendedPartition(in, blockSize, extLbaStart,
+						ebrLbaStart, searchOffset, ++counter);
 			}
 
 			return 0;
 		}
 
-		unsigned resolveExtendedPartition(ifstream& in, uint64_t extLbaStart,
-				uint64_t lbaStart, unsigned& counter)
+		unsigned resolveExtendedPartition(ifstream& in, size_t blockSize,
+				uint64_t extLbaStart, uint64_t lbaStart, unsigned& counter)
 		{
-			return resolveExtendedPartition(in, extLbaStart, extLbaStart,
-					lbaStart, counter);
+			return resolveExtendedPartition(in, blockSize, extLbaStart,
+					extLbaStart, lbaStart, counter);
 		}
 
-		string resolveMbrDiskOrPartition(uint32_t id, uint64_t lbaStart = 0,
+		string resolveMbrDiskOrPartition(uint32_t id, uint64_t offset = 0,
 				bool useLbaStart = false)
 		{
-
-			if (useLbaStart && lbaStart > UINT64_C(0xffffffff)) {
-				return "";
-			}
-
 			for (auto& disk : DevTree::getDisks()) {
 				const string& device = disk.second[DevTree::kPropDeviceReadable];
 				ifstream in(device.c_str());
@@ -177,6 +173,11 @@ namespace letterman {
 				if (mbr.id == id) {
 					if (!useLbaStart) return device;
 
+					size_t blockSize = DevTree::blockSize(disk.second);
+					uint64_t lbaStart = offset / blockSize;
+
+					if (lbaStart > UINT64_C(0xffffffff)) continue;
+
 					unsigned counter = 5;
 
 					for (unsigned i = 0; i != 4; ++i) {
@@ -187,8 +188,9 @@ namespace letterman {
 						if (partLbaStart == lbaStart) {
 							return getPartitionName(device, i + 1);
 						} else if (isEbrEntry(mbr.partitions[i])) {
-							unsigned partition = resolveExtendedPartition(in, partLbaStart,
-									lbaStart * 512, counter);
+							unsigned partition = resolveExtendedPartition(in,
+									blockSize, partLbaStart, lbaStart * blockSize,
+									counter);
 
 							if (partition) {
 								return getPartitionName(device, partition);
@@ -256,9 +258,7 @@ namespace letterman {
 
 		if (result.empty()) {
 #ifndef LETTERMAN_LINUX
-			if (_offset % 512 == 0) {
-				disk = resolveMbrDiskOrPartition(_disk, _offset / 512, true);
-			}
+			disk = resolveMbrDiskOrPartition(_disk, _offset, true);
 #else
 			disk = resolveMbrDiskOrPartition(_disk);
 #endif
