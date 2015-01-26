@@ -283,6 +283,8 @@ namespace letterman {
 		for (auto& dev : ret) {
 			Properties& props = dev.second;
 			props[kPropHardware] = props[kPropVendor] + props[kPropModel];
+			util::rtrim(props[kPropHardware]);
+			util::replaceAll(props[kPropHardware], ' ', '_');
 		}
 
 		return ret;

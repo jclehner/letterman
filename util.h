@@ -56,6 +56,9 @@ namespace letterman {
 			throw std::invalid_argument("Failed to convert " + str);
 		}
 
+		std::string& replaceAll(std::string& str, char from, char to);
+		std::string& rtrim(std::string& str);
+
 		inline void capitalize(std::string& str)
 		{
 			std::transform(str.begin(), str.end(), str.begin(), ::toupper);

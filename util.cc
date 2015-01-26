@@ -30,5 +30,21 @@ namespace letterman {
 			os.flags(saved);
 			return os;
 		}
+
+		string& replaceAll(string& str, char from, char to)
+		{
+			string::size_type i;
+			while ((i = str.find(from)) != string::npos) {
+				str[i] = to;
+			}
+
+			return str;
+		}
+
+		string& rtrim(string& str)
+		{
+			string::size_type i = str.find_last_not_of(" \t\r\n");
+			if (i != string::npos) str.resize(i + 1);
+		}
 	}
 }
