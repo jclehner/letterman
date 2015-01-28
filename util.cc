@@ -45,6 +45,7 @@ namespace letterman {
 		{
 			string::size_type i = str.find_last_not_of(" \t\r\n");
 			if (i != string::npos) str.resize(i + 1);
+			return str;
 		}
 	}
 }
