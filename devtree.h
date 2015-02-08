@@ -51,6 +51,12 @@ namespace letterman {
 
 		static size_t blockSize(const Properties& props);
 
+		static bool isDisk(const Properties& props)
+		{ return isDiskOrPartition(props, true); }
+
+		static bool isPartition(const Properties& props)
+		{ return isDiskOrPartition(props, false); }
+
 		private:
 
 		// When using this as as property key, return false in
@@ -63,13 +69,6 @@ namespace letterman {
 				const Properties& criteria, bool getDisks);
 
 		static bool isDiskOrPartition(const Properties& props, bool isDisk);
-
-		static bool isDisk(const Properties& props)
-		{ return isDiskOrPartition(props, true); }
-
-		static bool isPartition(const Properties& props)
-		{ return isDiskOrPartition(props, false); }
-
 
 		static bool arePropsMatching(
 				const Properties& all, const Properties& criteria);

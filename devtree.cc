@@ -1,9 +1,32 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include "devtree.h"
 #include "util.h"
+#include "mbr.h"
 using namespace std;
 
 namespace letterman {
+	namespace {
+		void fillMbrIdProp(Properties& props)
+		{
+			if (!props[DevTree::kPropMbrId].empty()) return;
+
+			if (DevTree::isDisk(props)) {
+				ifstream in(props[DevTree::kPropDeviceReadable]);
+				MBR mbr;
+
+				if (mbr.read(in)) {
+					ostringstream ostr;
+					ostr << setw(8) << setfill('0') << mbr.id;
+
+					props[DevTree::kPropMbrId] = ostr.str();
+				} else {
+					// TODO warn?
+				}
+			}
+		}
+	}
 
 	// The first char is NUL, so we don't have collisions with
 	// any property values (which are all human readable).
@@ -65,6 +88,8 @@ namespace letterman {
 			if(!(getDisks ? isDisk(e.second) : isPartition(e.second))) {
 				continue;
 			}
+
+			fillMbrIdProp(e.second);
 
 			if (props.empty() || DevTree::arePropsMatching(e.second, props)) {
 				ret.insert(e);

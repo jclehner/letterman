@@ -9,6 +9,7 @@
 #include "mapping.h"
 #include "endian.h"
 #include "util.h"
+#include "mbr.h"
 using namespace std;
 
 namespace letterman {
@@ -69,61 +70,6 @@ namespace letterman {
 #else
 			return disk + util::toString(partition);
 #endif
-		}
-
-		struct MBR
-		{
-			struct Partition
-			{
-				uint8_t bootable;
-				char chsFirst[3];
-				uint8_t type;
-				char chsLast[3];
-				uint32_t lbaStart;
-				uint32_t lbaSize;
-			} __attribute__((packed));
-
-			char code[440];
-			uint32_t id;
-			char zero[2];
-			Partition partitions[4];
-			uint16_t sig;
-
-			bool read(istream& in)
-			{
-				if (!in.read(reinterpret_cast<char*>(this), 512)) {
-					return false;
-				}
-
-				if((sig = le16toh(sig)) != 0xaa55) {
-					return false;
-				}
-
-				id = le32toh(id);
-
-				for (unsigned i = 0; i != 4; ++i) {
-					partitions[i].lbaStart = le32toh(partitions[i].lbaStart);
-					partitions[i].lbaSize = le32toh(partitions[i].lbaSize);
-				}
-
-				return true;
-			}
-
-
-		} __attribute__((packed));
-
-		static_assert(sizeof(MBR) == 512, "MBR is not 512 bytes");
-
-		inline bool isEbrEntry(const MBR::Partition& partition) {
-			switch (partition.type) {
-				case 0x05: // CHS extended, but (ab)used as LBA
-				case 0x0f: // LBA extended
-				case 0x85: // Linux extended
-					return true;
-
-				default:
-					return false;
-			}
 		}
 
 		unsigned resolveExtendedPartition(ifstream& in, const size_t blockSize,
@@ -187,7 +133,7 @@ namespace letterman {
 
 						if (partLbaStart == lbaStart) {
 							return getPartitionName(device, i + 1);
-						} else if (isEbrEntry(mbr.partitions[i])) {
+						} else if (MBR::isExtended(mbr.partitions[i])) {
 							unsigned partition = resolveExtendedPartition(in,
 									blockSize, partLbaStart, lbaStart * blockSize,
 									counter);
