@@ -230,7 +230,7 @@ int main(int argc, char **argv)
 
 				Entry e;
 
-				e.disk = htole32(util::fromString<uint32_t>(mbrIdStr));
+				e.disk = htole32(util::fromString<uint32_t>(mbrIdStr, ios::hex));
 				e.offset = htole64(offsetMult * util::fromString<uint64_t>(offsetStr));
 
 				MountedDevices(hive, true).add(arg2[0], &e, sizeof(e));

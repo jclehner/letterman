@@ -47,7 +47,7 @@ namespace letterman {
 		{
 			T t;
 			std::istringstream istr(str);
-			istr.setf(mask);
+			istr.setf(mask, std::ios::basefield);
 
 			if (istr >> t) {
 				return t;
