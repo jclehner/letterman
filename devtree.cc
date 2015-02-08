@@ -18,7 +18,7 @@ namespace letterman {
 
 				if (mbr.read(in)) {
 					ostringstream ostr;
-					ostr << setw(8) << setfill('0') << mbr.id;
+					ostr << setw(8) << setfill('0') << hex << mbr.id;
 
 					props[DevTree::kPropMbrId] = ostr.str();
 				} else {
