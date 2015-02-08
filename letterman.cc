@@ -248,7 +248,7 @@ int main(int argc, char **argv)
 
 			for (auto& e : data) {
 				cout << e.first << "\t" << e.second[DevTree::kPropHardware] << endl;
-#if 0
+#if 1
 				for (auto& props : e.second) {
 					cout << "  " << props.first << "=" << props.second << endl;
 				}

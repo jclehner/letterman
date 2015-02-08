@@ -20,7 +20,7 @@ namespace letterman {
 			"ID_FS_LABEL_ENC", "UDISKS_PARTITION_NUMBER", "UDISKS_PARTITION_OFFSET",
 			"ID_DRIVE_FLOPPY", "MAJOR", "MINOR", "ID_SERIAL", "ID_SERIAL_SHORT",
 			"ID_PART_ENTRY_DISK", "DEVTYPE", "ID_PART_TABLE_UUID", "ID_PART_ENTRY_UUID",
-			"ID_FS_TYPE", "ID_MODEL"
+			"ID_FS_TYPE", "ID_MODEL", "DEVPATH"
 		};
 
 
@@ -51,6 +51,16 @@ namespace letterman {
 
 			return "";
 		}
+
+		void getSysAttr(Properties& props, const string& target,
+				const string& name)
+		{
+			string filename("/sys/" + props["DEVPATH"] + "/" + name);
+			ifstream in(filename.c_str());
+			if (!in.good() || !getline(in, props[target])) {
+				// TODO warning in debug mode
+			}
+		}
 	}
 
 	const string DevTree::kPropDeviceName = "kPropDeviceName";
@@ -62,6 +72,7 @@ namespace letterman {
 	const string DevTree::kPropFsLabel = "ID_FS_LABEL";
 	const string DevTree::kPropPartUuid = "ID_PART_ENTRY_UUID";
 	const string DevTree::kPropHardware = "ID_MODEL";
+	const string DevTree::kPropLbaSize = "kPropLbaSize";
 
 	const string DevTree::kPropMountPoint = "kPropMountPoint";
 	const string DevTree::kPropMbrId = "ID_PART_TABLE_UUID";
@@ -109,10 +120,16 @@ namespace letterman {
 			if (!props.empty()) {
 				if (isDisk(props)) {
 					props[kPropDiskId] = props["MAJOR"] + ":" + props["MINOR"];
+					getSysAttr(props, kPropLbaSize, "queue/logical_block_size");
 				} else if (isPartition(props)) {
 					props[kPropDiskId] = props["ID_PART_ENTRY_DISK"];
-					props[kPropIsNtfs] = (props["ID_FS_TYPE"] == "ntfs" ? "1" : "0");
+					props[kPropIsNtfs] = (props["ID_FS_TYPE"] == "ntfs" ?
+							"1" : "0");
 					props[kPropMountPoint] = getMountPoint(props["DEVNAME"]);
+
+					if (props[kPropPartOffsetBlocks].empty()) {
+						getSysAttr(props, kPropPartOffsetBlocks, "start");
+					}
 				} else {
 					continue;
 				}
