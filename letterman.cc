@@ -187,8 +187,56 @@ int main(int argc, char **argv)
 
 				util::hexdump(cout, wstr.c_str(), wstr.size(), 4) << endl;
 				MountedDevices(hive, true).add(arg2[0], wstr.c_str(), wstr.size());
+			} else if (arg1 == "partition") {
+				
+				Properties criteria = {{ DevTree::kPropDeviceMountable, arg3 }};
+				map<string, Properties> result(DevTree::getPartitions(criteria));
+				if (result.empty()) throw UserFault("No such partition: " + arg3);
+
+				Properties props = result.begin()->second;
+
+				uint64_t offsetMult = 1;
+				string offsetStr = props[DevTree::kPropPartOffsetBlocks];
+				if (!offsetStr.empty()) {
+					offsetMult = 512;
+				} else {
+					offsetStr = props[DevTree::kPropPartOffsetBytes];
+				}
+
+				if (offsetStr.empty()) {
+					throw UserFault("Failed to determine partition offset; must specify manually");
+				}
+
+				// Get the disk with the corresponding kPropDiskId
+				criteria = {{ DevTree::kPropDiskId, props[DevTree::kPropDiskId] }};
+				result = DevTree::getDisks(criteria);
+
+				if (result.empty()) {
+					throw UserFault("Failed to determine hosting disk of partition " + arg3);
+				}
+
+				props = result.begin()->second;
+
+				string mbrIdStr = props[DevTree::kPropMbrId];
+				if (mbrIdStr.empty()) {
+					throw UserFault("Failed to determine MBR disk id of partition " + arg3);
+				}
+
+				struct Entry
+				{
+					uint32_t disk;
+					uint64_t offset;
+				} __attribute__((packed));
+
+				Entry e;
+
+				e.disk = htole32(util::fromString<uint32_t>(mbrIdStr));
+				e.offset = htole64(offsetMult * util::fromString<uint64_t>(offsetStr));
+
+				MountedDevices(hive, true).add(arg2[0], &e, sizeof(e));
+
 			} else {
-				cerr << "Unknown type: " << arg1 << endl;
+				throw UserFault("Unknown type: " + arg1);
 			}
 		} else if (action == "dump") {
 			requireArgCount(argc, 1);
